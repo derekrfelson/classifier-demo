@@ -1,3 +1,13 @@
+classifier
+*.o
+.deps
+.autotools
+.project
+.cproject
+.settings
+Makefile
+config.*
+
 # http://www.gnu.org/software/automake
 
 Makefile.in
