@@ -65,6 +65,8 @@ partitionByClass(const Dataset<Animal>& dataset)
 int main(int argc, char** argv)
 {
 	auto zooData = ZooDataset{"../data/zoo.csv"};
+	std::cout << zooData.getMeans() << std::endl;
+	std::cout << zooData.getCovarianceMatrix() << std::endl;
 
 	/*
 	auto p = partition<Animal>(animals, 0, std::ceil(animals.size() / 10.0));

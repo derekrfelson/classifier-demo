@@ -72,3 +72,17 @@ ZooDataset::ZooDataset(std::string filename)
 	assert(!std::getline(file, line));
 }
 
+ZooDataset::MeanRowVector ZooDataset::getMeans() const
+{
+	return data.cast<double>().colwise().mean();
+}
+
+ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrix() const
+{
+	Eigen::MatrixXd centered = data.cast<double>().rowwise() - getMeans();
+	CovarianceMatrix cov = (centered.transpose() * centered)
+			/ static_cast<double>(data.rows() - 1);
+	return cov;
+}
+
+
