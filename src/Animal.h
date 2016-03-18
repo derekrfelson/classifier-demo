@@ -9,29 +9,17 @@
 #define ANIMAL_H_
 
 #include <string>
+#include <array>
+#include <cstdint>
 
-struct Animal
+class Animal
 {
 public:
 	explicit Animal(std::string csvLine);
+	uint8_t getType() const;
+private:
 	std::string name;
-	bool hair;
-	bool feathers;
-	bool eggs;
-	bool milk;
-	bool airborne;
-	bool aquatic;
-	bool predator;
-	bool toothed;
-	bool backbone;
-	bool breathes;
-	bool venomous;
-	bool fins;
-	unsigned int legs;
-	bool tail;
-	bool domestic;
-	bool catsize;
-	unsigned int type;
+	std::array<uint8_t, 17> fields;
 };
 
 #endif /* ANIMAL_H_ */

@@ -12,86 +12,33 @@
 
 Animal::Animal(std::string csvLine)
 : name{},
-  hair{false},
-  feathers{false},
-  eggs{false},
-  milk{false},
-  airborne{false},
-  aquatic{false},
-  predator{false},
-  toothed{false},
-  backbone{false},
-  breathes{false},
-  venomous{false},
-  fins{false},
-  legs{0},
-  tail{false},
-  domestic{false},
-  catsize{false},
-  type{0}
+  fields{}
 {
-	auto field = std::string{};
 	auto ssLine = std::stringstream{csvLine};
-	auto ssField = std::stringstream{};
+	auto field = std::string{};
 
+	// Read the name
 	assert(std::getline(ssLine, field, ','));
 	name = field;
 
-	assert(std::getline(ssLine, field, ','));
-	hair = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	feathers = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	eggs = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	milk = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	airborne = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	aquatic = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	predator = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	toothed = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	backbone = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	breathes = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	venomous = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	fins = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	ssField = std::stringstream{field};
-	ssField >> legs;
-	assert(legs == 0 || legs == 2 || legs == 4 || legs == 5 || legs == 6
-			|| legs == 8);
-
-	assert(std::getline(ssLine, field, ','));
-	tail = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	domestic = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	catsize = field == "1";
-
-	assert(std::getline(ssLine, field, ','));
-	ssField = std::stringstream{field};
-	ssField >> type;
+	// Read the 17 remaining fields
+	for (auto i = 0; i < 17; ++i)
+	{
+		assert(std::getline(ssLine, field, ','));
+		fields[i] = std::stoi(field);
+	}
 
 	// Must be at end of string now
 	assert(!std::getline(ssLine, field, ','));
+
+	// Certain fields can only take on certain values
+	assert(fields[12] == 0 || fields[12] == 2 || fields[12] == 4
+			|| fields[12] || fields[12] == 5 || fields[12] == 6
+			|| fields[12] == 8);
+	assert(fields[16] >= 1 && fields[16] <= 7);
+}
+
+uint8_t Animal::getType() const
+{
+	return fields[16];
 }

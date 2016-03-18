@@ -48,7 +48,7 @@ partitionByClass(const Dataset<Animal>& dataset)
 	{
 		for (const auto& animal : dataset)
 		{
-			if (animal->type == i + 1)
+			if (animal->getType() == i + 1)
 			{
 				ret[i].push_back(animal);
 			}
@@ -82,6 +82,8 @@ int main(int argc, char** argv)
 	{
 		std::cout << c.size() << std::endl;
 	}
+
+	// Calculate the mean for each dimension in the data
 
 	return 0;
 }
