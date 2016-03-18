@@ -1,2 +1,2 @@
-SUBDIRS=src
+SUBDIRS=src tests
 AM_CXXFLAGS = -std=c++14
