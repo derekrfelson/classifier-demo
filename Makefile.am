@@ -1,1 +1,2 @@
 SUBDIRS=src
+AM_CXXFLAGS = -std=c++14
