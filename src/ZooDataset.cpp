@@ -45,7 +45,7 @@ ZooDataset::ZooDataset(std::string filename)
 		auto ssLine = std::stringstream{line};
 		auto field = std::string{};
 		assert(std::getline(ssLine, field, ','));
-		names[i] = field;
+		names.push_back(field);
 
 		// Read the 16 data fields
 		for (auto j = 0; j < 16; ++j)
@@ -68,8 +68,65 @@ ZooDataset::ZooDataset(std::string filename)
 		assert(types[i] >= 1 && types[i] <= 7);
 	}
 
+	// Sanity check
+	assert(names.size() == data.rows() && data.rows() == types.rows());
+
 	// We must be at the end of the file now
 	assert(!std::getline(file, line));
+}
+
+ZooDataset::ZooDataset(std::vector<std::string> names, TypeVector types,
+		DataMatrix data)
+: names{names},
+  types{types},
+  data{data}
+{
+}
+
+ZooDataset ZooDataset::getSubsetByClass(uint8_t type) const
+{
+	assert(type >= 1 && type <= 7);
+
+	// Count how large the subset will be
+	auto subsetSize = 0;
+	for (auto i = 0; i < names.size(); ++i)
+	{
+		if (types[i] == type)
+		{
+			++subsetSize;
+		}
+	}
+
+	// End the program if we have a size-0 subclass
+	if (subsetSize == 0)
+	{
+		std::cerr << "Problem found: ZooDataset subclass of type "
+				<< static_cast<int>(type) << " has size 0" << std::endl;
+		std::abort();
+	}
+
+	// Initialize our vectors to the right size
+	// Subset types will all be the same
+	auto subsetTypes = TypeVector::Constant(subsetSize, 1, type);
+	auto subsetData = DataMatrix(subsetSize, 16);
+	auto subsetNames = std::vector<std::string>(subsetSize);
+
+	// Copy the data into the subset
+	auto numCopied = 0;
+	for (auto i = 0; i < names.size(); ++i)
+	{
+		if (types[i] == type)
+		{
+			subsetNames.push_back(names[i]);
+			subsetData.row(numCopied++) = data.row(i);
+		}
+	}
+
+	// Sanity check
+	assert(numCopied == subsetSize);
+
+	return ZooDataset{std::move(subsetNames), std::move(subsetTypes),
+		std::move(subsetData)};
 }
 
 ZooDataset::MeanRowVector ZooDataset::getMeans() const

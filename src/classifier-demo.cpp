@@ -65,23 +65,11 @@ partitionByClass(const Dataset<Animal>& dataset)
 int main(int argc, char** argv)
 {
 	auto zooData = ZooDataset{"../data/zoo.csv"};
-	std::cout << zooData.getMeans() << std::endl;
-	std::cout << zooData.getCovarianceMatrix() << std::endl;
 
-	/*
-	auto p = partition<Animal>(animals, 0, std::ceil(animals.size() / 10.0));
-
-	std::cout << "Training set size: " << p.first.size() << std::endl;
-	std::cout << "Testing set size: " << p.second.size() << std::endl;
-
-	auto classes = partitionByClass(p.first);
-	for (const auto& c : classes)
+	for (auto i = 1; i <= 7; ++i)
 	{
-		std::cout << c.size() << std::endl;
+		std::cout << zooData.getSubsetByClass(i).getMeans() << std::endl;
 	}
-	*/
-
-	// Calculate the mean for each dimension in the data
 
 	return 0;
 }

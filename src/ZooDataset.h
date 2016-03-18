@@ -21,9 +21,14 @@ public:
 	explicit ZooDataset(std::string filename);
 	MeanRowVector getMeans() const;
 	CovarianceMatrix getCovarianceMatrix() const;
+	ZooDataset getSubsetByClass(uint8_t type) const;
+
 private:
 	using TypeVector = Eigen::Matrix<uint8_t, Eigen::Dynamic, 1>;
 	using DataMatrix = Eigen::Matrix<uint8_t, Eigen::Dynamic, 16>;
+
+	explicit ZooDataset(std::vector<std::string> names,
+			TypeVector types, DataMatrix data);
 
 	std::vector<std::string> names;
 	TypeVector types;
