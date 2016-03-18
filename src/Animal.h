@@ -13,7 +13,7 @@
 struct Animal
 {
 public:
-	Animal(std::string csvLine);
+	explicit Animal(std::string csvLine);
 	std::string name;
 	bool hair;
 	bool feathers;
