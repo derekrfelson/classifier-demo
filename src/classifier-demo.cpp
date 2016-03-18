@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include "ZooDataset.h"
 
 template <typename T>
 using PData = std::shared_ptr<T>;
@@ -63,15 +64,9 @@ partitionByClass(const Dataset<Animal>& dataset)
 
 int main(int argc, char** argv)
 {
-	std::ifstream file("../data/zoo.csv");
-	std::string line;
-	std::vector<std::shared_ptr<Animal> > animals;
+	auto zooData = ZooDataset{"../data/zoo.csv"};
 
-	while(std::getline(file, line))
-	{
-		animals.emplace_back(std::make_shared<Animal>(line));
-	}
-
+	/*
 	auto p = partition<Animal>(animals, 0, std::ceil(animals.size() / 10.0));
 
 	std::cout << "Training set size: " << p.first.size() << std::endl;
@@ -82,6 +77,7 @@ int main(int argc, char** argv)
 	{
 		std::cout << c.size() << std::endl;
 	}
+	*/
 
 	// Calculate the mean for each dimension in the data
 

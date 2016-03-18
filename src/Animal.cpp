@@ -12,7 +12,10 @@
 
 Animal::Animal(std::string csvLine)
 : name{},
-  fields{}
+  type{0},
+  data{0},
+  means{0},
+  covarianceMatrix{ AnimalMatrix::Zero() }
 {
 	auto ssLine = std::stringstream{csvLine};
 	auto field = std::string{};
@@ -21,24 +24,28 @@ Animal::Animal(std::string csvLine)
 	assert(std::getline(ssLine, field, ','));
 	name = field;
 
-	// Read the 17 remaining fields
-	for (auto i = 0; i < 17; ++i)
+	// Read the 16 data fields
+	for (auto i = 0; i < 16; ++i)
 	{
 		assert(std::getline(ssLine, field, ','));
-		fields[i] = std::stoi(field);
+		data[i] = std::stoi(field);
 	}
+
+	// Read the class/type
+	assert(std::getline(ssLine, field, ','));
+	type = std::stoi(field);
 
 	// Must be at end of string now
 	assert(!std::getline(ssLine, field, ','));
 
 	// Certain fields can only take on certain values
-	assert(fields[12] == 0 || fields[12] == 2 || fields[12] == 4
-			|| fields[12] || fields[12] == 5 || fields[12] == 6
-			|| fields[12] == 8);
-	assert(fields[16] >= 1 && fields[16] <= 7);
+	assert(data[12] == 0 || data[12] == 2 || data[12] == 4
+			|| data[12] || data[12] == 5 || data[12] == 6
+			|| data[12] == 8);
+	assert(data[16] >= 1 && data[16] <= 7);
 }
 
 uint8_t Animal::getType() const
 {
-	return fields[16];
+	return type;
 }

@@ -1,1 +1,1 @@
-Sample readme file for classifier-demo project.
+The classifier demo relies on the Eigen linear algebra library, available at http://eigen.tuxfamily.org/.
