@@ -80,45 +80,47 @@ size_t ZooDataset::size() const
 	return names.size();
 }
 
-Partition<ZooDataset> ZooDataset::partition(size_t startingFold,
-		size_t numFolds)
-{
-}
-
 /**
- * Separates the dataset into training and testing sets using
- * the leave-one-out method. The result will be two datasets,
- * where one contains a single element and the other contains
- * the remainder of the elements.
- *
- * leaveOutIndex: the index of the element to leave out
+ * Separates the dataset into training and testing sets. The result will
+ * be a partition where testing = elements in [startIndex, endIndex],
+ * and training = everything else.
  */
-Partition<ZooDataset> ZooDataset::partition(size_t leaveOutIndex)
+Partition<ZooDataset> ZooDataset::partition(
+		size_t startIndex, size_t endIndex) const
 {
-	assert(leaveOutIndex >= 0 && leaveOutIndex < size());
-	assert(size() >= 2);
+	// Check preconditions
+	assert(startIndex <= endIndex);
+	assert(endIndex < size());
+
+	// Calculate how large each subset will be
+	const auto finalTestingSize = endIndex - startIndex + 1;
+	const auto finalTrainingSize = size() - finalTestingSize;
 
 	// Initialize the sizes for the training subset
 	std::vector<std::string> trainingNames{};
-	trainingNames.reserve(size()-1);
-	TypeVector trainingTypes{size()-1, 1};
-	DataMatrix trainingData{size()-1, NumFields};
+	trainingNames.reserve(finalTrainingSize);
+	TypeVector trainingTypes{finalTrainingSize, 1};
+	DataMatrix trainingData{finalTrainingSize, NumFields};
 
-	// Initialize the sizes for the test subset (all 1)
-	TypeVector testingTypes{1, 1};
-	DataMatrix testingData{1, NumFields};
+	// Initialize the sizes for the test subset
 	std::vector<std::string> testingNames{};
-
-	// Fill out the test subset now
-	testingTypes[0] = types[leaveOutIndex];
-	testingData.row(0) = data.row(leaveOutIndex);
-	testingNames.push_back(names[leaveOutIndex]);
+	testingNames.reserve(finalTestingSize);
+	TypeVector testingTypes{finalTestingSize, 1};
+	DataMatrix testingData{finalTestingSize, NumFields};
 
 	// Fill out the training subset with the remaining elements
 	auto trainingSize = 0;
+	auto testingSize = 0;
 	for (auto i = 0; i < size(); ++i)
 	{
-		if (i != leaveOutIndex)
+		if (i >= startIndex && i <= endIndex)
+		{
+			testingNames.push_back(names[i]);
+			testingTypes[testingSize] = types[i];
+			testingData.row(testingSize) = data.row(i);
+			++testingSize;
+		}
+		else
 		{
 			trainingNames.push_back(names[i]);
 			trainingTypes[trainingSize] = types[i];
@@ -128,13 +130,14 @@ Partition<ZooDataset> ZooDataset::partition(size_t leaveOutIndex)
 	}
 
 	// Sanity check
-	assert(trainingSize == size() - 1);
-	assert(trainingNames.size() == trainingSize);
-	assert(trainingData.rows() == trainingSize);
-	assert(trainingTypes.rows() == trainingSize);
-	assert(testingNames.size() == 1);
-	assert(testingData.rows() == 1);
-	assert(testingTypes.rows() == 1);
+	assert(trainingSize == finalTrainingSize);
+	assert(trainingNames.size() == finalTrainingSize);
+	assert(trainingData.rows() == finalTrainingSize);
+	assert(trainingTypes.rows() == finalTrainingSize);
+	assert(testingSize == finalTestingSize);
+	assert(testingNames.size() == finalTestingSize);
+	assert(testingData.rows() == finalTestingSize);
+	assert(testingTypes.rows() == finalTestingSize);
 
 	return Partition<ZooDataset>{
 		ZooDataset{trainingNames, trainingTypes, trainingData},
@@ -151,6 +154,7 @@ ZooDataset::ZooDataset(std::vector<std::string> names, TypeVector types,
 
 ZooDataset ZooDataset::getSubsetByClass(uint8_t type) const
 {
+	// Check preconditions
 	assert(type >= 1 && type <= NumClasses);
 
 	// Count how large the subset will be

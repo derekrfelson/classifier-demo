@@ -8,6 +8,11 @@
 #ifndef PARTITION_H_
 #define PARTITION_H_
 
+#include <cstddef>
+#include <utility>
+
+std::pair<size_t, size_t> kFoldIndices(size_t currentFold, size_t k, size_t size);
+
 template <typename T>
 struct Partition
 {

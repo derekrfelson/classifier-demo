@@ -31,8 +31,7 @@ public:
 	MeanRowVector getMeans() const;
 	CovarianceMatrix getCovarianceMatrix() const;
 	ZooDataset getSubsetByClass(uint8_t type) const;
-	Partition<ZooDataset> partition(size_t startingFold, size_t numFolds);
-	Partition<ZooDataset> partition(size_t leaveOutIndex);
+	Partition<ZooDataset> partition(size_t startIndex, size_t endIndex) const;
 
 private:
 	explicit ZooDataset(std::vector<std::string> names,
