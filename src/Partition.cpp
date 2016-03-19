@@ -21,8 +21,8 @@ std::pair<size_t, size_t> kFoldIndices(size_t currentFold, size_t k, size_t size
 {
 	// Check preconditions
 	assert(currentFold > 0 && currentFold <= k);
-	assert(k < size && k > 1);
 	assert(size > 1);
+	assert(k <= size && k > 1);
 
 	// Calculate start index
 	auto numTestingElements = static_cast<size_t>(size / k);
