@@ -15,10 +15,18 @@ int main(int argc, char** argv)
 {
 	auto zooData = ZooDataset{"../data/zoo.csv"};
 
-	for (auto i = 1; i <= ZooDataset::NumClasses; ++i)
+	//for (auto i = 1; i <= ZooDataset::NumClasses; ++i)
+	for (auto i = 1; i <= 1; ++i)
 	{
-		std::cout << zooData.getSubsetByClass(i).getMeans() << std::endl;
+		auto subset = zooData.getSubsetByClass(i);
+		auto cmInv = subset.getCovarianceMatrixInverse();
+		auto cmDet = subset.getCovarianceMatrixDeterminant();
+
+		std::cout << subset.getMeans() << std::endl << std::endl;
+		std::cout << cmInv << std::endl << std::endl;
+		std::cout << cmDet << std::endl;
 	}
 
 	return 0;
 }
+

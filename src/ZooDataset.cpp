@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <eigen3/Eigen/SVD>
 
 ZooDataset::ZooDataset(std::string filename)
 : names{},
@@ -212,4 +213,46 @@ ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrix() const
 	return cov;
 }
 
+ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrixInverse() const
+{
+	auto svd = getCovarianceMatrix().jacobiSvd(
+			Eigen::ComputeFullU | Eigen::ComputeFullV);
 
+	auto pinvS = svd.singularValues();
+	for (auto i = 0; i < pinvS.rows(); ++i)
+	{
+		// Anything too small is probably a rounding error
+		if (pinvS[i] < .00000001)
+		{
+			pinvS[i] = 0;
+		}
+
+		// Take the reciprocal
+		if (pinvS[i] > 0)
+		{
+			pinvS[i] = 1 / pinvS[i];
+		}
+	}
+
+	auto pinvM = static_cast<ZooDataset::CovarianceMatrix>(
+			svd.matrixV() * pinvS.asDiagonal() * svd.matrixU().transpose());
+
+	for (auto i = 0; i < pinvM.rows(); ++i)
+	{
+		for (auto j = 0; j < pinvM.cols(); ++j)
+		{
+			// Anything too small is probably a rounding error
+			if (pinvM(i,j) < .00000001)
+			{
+				pinvM(i,j) = 0;
+			}
+		}
+	}
+
+	return pinvM;
+}
+
+double ZooDataset::getCovarianceMatrixDeterminant() const
+{
+	return getCovarianceMatrix().jacobiSvd().singularValues().sum();
+}

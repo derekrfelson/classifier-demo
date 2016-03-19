@@ -32,6 +32,8 @@ public:
 	CovarianceMatrix getCovarianceMatrix() const;
 	ZooDataset getSubsetByClass(uint8_t type) const;
 	Partition<ZooDataset> partition(size_t startIndex, size_t endIndex) const;
+	CovarianceMatrix getCovarianceMatrixInverse() const;
+	double getCovarianceMatrixDeterminant() const;
 
 private:
 	explicit ZooDataset(std::vector<std::string> names,
@@ -41,7 +43,5 @@ private:
 	TypeVector types;
 	DataMatrix data;
 };
-
-
 
 #endif /* ZOODATASET_H_ */
