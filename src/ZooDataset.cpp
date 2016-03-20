@@ -13,6 +13,8 @@
 #include <iostream>
 #include <eigen3/Eigen/SVD>
 
+using Decimal = ZooDataset::Decimal;
+
 ZooDataset::ZooDataset(std::string filename)
 : names{},
   types{},
@@ -202,14 +204,15 @@ ZooDataset ZooDataset::getSubsetByClass(uint8_t type) const
 
 ZooDataset::RowVector ZooDataset::getMeans() const
 {
-	return data.cast<double>().colwise().mean();
+	return data.cast<Decimal>().colwise().mean();
 }
 
 ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrix() const
 {
-	Eigen::MatrixXd centered = data.cast<double>().rowwise() - getMeans();
+	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> centered
+		= data.cast<Decimal>().rowwise() - getMeans();
 	CovarianceMatrix cov = (centered.transpose() * centered)
-			/ static_cast<double>(data.rows() - 1);
+			/ static_cast<Decimal>(data.rows() - 1);
 	return cov;
 }
 
@@ -252,15 +255,27 @@ ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrixInverse() const
 	return pinvM;
 }
 
-double ZooDataset::getCovarianceMatrixDeterminant() const
+Decimal ZooDataset::getCovarianceMatrixDeterminant() const
 {
-	return getCovarianceMatrix().jacobiSvd().singularValues().sum();
+	auto svs = getCovarianceMatrix().jacobiSvd().singularValues();
+	assert(svs.rows() == 16);
+
+	Decimal product = 1;
+	for (auto i = 0; i < svs.rows(); ++i)
+	{
+		if (svs[i] > .00000001)
+		{
+			product *= svs[i];
+		}
+	}
+
+	return product;
 }
 
 ZooDataset::RowVector ZooDataset::getPoint(size_t i) const
 {
 	assert(i < data.rows());
-	return data.row(i).cast<double>();
+	return data.row(i).cast<Decimal>();
 }
 
 uint8_t ZooDataset::getType(size_t i) const

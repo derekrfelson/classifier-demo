@@ -18,8 +18,9 @@ class ZooDataset
 public:
 	static constexpr auto NumFields = 16;
 	static constexpr auto NumClasses = 7;
-	using RowVector = Eigen::Matrix<double, 1, NumFields>;
-	using CovarianceMatrix = Eigen::Matrix<double, NumFields, NumFields>;
+	using Decimal = long double;
+	using RowVector = Eigen::Matrix<Decimal, 1, NumFields>;
+	using CovarianceMatrix = Eigen::Matrix<Decimal, NumFields, NumFields>;
 
 private:
 	using TypeVector = Eigen::Matrix<uint8_t, Eigen::Dynamic, 1>;
@@ -32,15 +33,15 @@ public:
 	ZooDataset getSubsetByClass(uint8_t type) const;
 	Partition<ZooDataset> partition(size_t startIndex, size_t endIndex) const;
 	CovarianceMatrix getCovarianceMatrixInverse() const;
-	double getCovarianceMatrixDeterminant() const;
+	Decimal getCovarianceMatrixDeterminant() const;
 	RowVector getPoint(size_t i) const;
 	uint8_t getType(size_t i) const;
 	std::string getName(size_t i) const;
+	CovarianceMatrix getCovarianceMatrix() const;
 
 private:
 	explicit ZooDataset(std::vector<std::string> names,
 			TypeVector types, DataMatrix data);
-	CovarianceMatrix getCovarianceMatrix() const;
 
 	std::vector<std::string> names;
 	TypeVector types;

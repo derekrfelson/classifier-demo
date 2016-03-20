@@ -25,6 +25,8 @@ int main(int argc, char** argv)
 
 	for (auto k = 1; k <= numFolds; ++k)
 	{
+		std::cout << "Fold " << k << std::endl;
+
 		// Partition into testing and training sets
 		auto indices = kFoldIndices(k, numFolds, zooData.size());
 		auto partitions = zooData.partition(indices.first, indices.second);

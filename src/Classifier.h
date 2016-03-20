@@ -20,7 +20,7 @@ public:
 
 private:
 	std::vector<ZooDataset::CovarianceMatrix> cmInverses;
-	std::vector<double> cmDeterminants;
+	std::vector<ZooDataset::Decimal> cmDeterminants;
 	std::vector<ZooDataset::RowVector> meanVectors;
 };
 

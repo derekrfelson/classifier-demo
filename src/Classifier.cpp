@@ -8,8 +8,11 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include "ZooDataset.h"
 #include "Classifier.h"
 #include "Partition.h"
+
+using Decimal = ZooDataset::Decimal;
 
 Classifier::Classifier(const ZooDataset& trainingSet)
 : cmInverses{},
@@ -36,16 +39,23 @@ Classifier::Classifier(const ZooDataset& trainingSet)
 uint8_t Classifier::classify(ZooDataset::RowVector point) const
 {
 	auto bestType = 0;
-	double bestValue = 0;
+	Decimal bestValue = 0;
 
-	for (auto a = 0; a < ZooDataset::NumClasses - 1; ++a)
+	//for (auto a = 0; a < ZooDataset::NumClasses - 1; ++a)
+	for (auto a = 0; a < ZooDataset::NumClasses; ++a)
 	{
 		// Assume that A is our best class
 		bestType = a;
 
 		// Compare A to everything else too see if anything is better
-		for (auto b = a + 1; b < ZooDataset::NumClasses; ++b)
+		//for (auto b = a + 1; b < ZooDataset::NumClasses; ++b)
+		for (auto b = 0; b < ZooDataset::NumClasses; ++b)
 		{
+			if (a == b)
+			{
+				continue;
+			}
+
 			auto value =
 					std::log(cmDeterminants[b]) - std::log(cmDeterminants[a])
 				    + (point - meanVectors[b])
