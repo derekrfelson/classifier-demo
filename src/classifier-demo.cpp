@@ -9,30 +9,38 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <limits>
 #include "Classifier.h"
 #include "Partition.h"
 #include "ZooDataset.h"
 
 using CovarianceMatrix = ZooDataset::CovarianceMatrix;
-using MeanRowVector = ZooDataset::MeanRowVector;
+using MeanRowVector = ZooDataset::RowVector;
 
 int main(int argc, char** argv)
 {
 	ZooDataset zooData{"../data/zoo.csv"};
-	std::vector<Classifier> classes;
-	classes.reserve(ZooDataset::NumClasses);
-	std::vector<ZooDataset> testingData;
-	testingData.reserve(ZooDataset::NumClasses);
 
-	for (auto i = 1; i <= ZooDataset::NumClasses; ++i)
+	constexpr auto numFolds = 10;
+
+	for (auto k = 1; k <= numFolds; ++k)
 	{
-		auto classSubset = zooData.getSubsetByClass(i);
-		std::cout << "size: " << classSubset.size() << std::endl;
-		auto indices = kFoldIndices(1, 10, classSubset.size());
+		// Partition into testing and training sets
+		auto indices = kFoldIndices(k, numFolds, zooData.size());
 		auto partitions = zooData.partition(indices.first, indices.second);
+
+		// Create a classifier for the dataset
 		Classifier c{partitions.training};
-		classes.push_back(c);
-		testingData.push_back(partitions.testing);
+
+		// Test each point in the testing set
+		for (auto i = 0; i < partitions.testing.size(); ++i)
+		{
+			auto type = c.classify(partitions.testing.getPoint(i));
+			std::cout << "Decided class " << static_cast<int>(type)
+					<< " for " << partitions.testing.getName(i) << " (actual "
+					<< static_cast<int>(partitions.testing.getType(i))
+					<< "): " << partitions.testing.getPoint(i) << std::endl;
+		}
 	}
 
 	return 0;

@@ -200,7 +200,7 @@ ZooDataset ZooDataset::getSubsetByClass(uint8_t type) const
 		std::move(subsetData)};
 }
 
-ZooDataset::MeanRowVector ZooDataset::getMeans() const
+ZooDataset::RowVector ZooDataset::getMeans() const
 {
 	return data.cast<double>().colwise().mean();
 }
@@ -255,4 +255,22 @@ ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrixInverse() const
 double ZooDataset::getCovarianceMatrixDeterminant() const
 {
 	return getCovarianceMatrix().jacobiSvd().singularValues().sum();
+}
+
+ZooDataset::RowVector ZooDataset::getPoint(size_t i) const
+{
+	assert(i < data.rows());
+	return data.row(i).cast<double>();
+}
+
+uint8_t ZooDataset::getType(size_t i) const
+{
+	assert(i < types.rows());
+	return types[i];
+}
+
+std::string ZooDataset::getName(size_t i) const
+{
+	assert(i < names.size());
+	return names[i];
 }

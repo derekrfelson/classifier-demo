@@ -8,16 +8,20 @@
 #ifndef CLASSIFIER_H_
 #define CLASSIFIER_H_
 
+#include <vector>
+#include <cstdint>
 #include "ZooDataset.h"
 
 struct Classifier
 {
 public:
-	explicit Classifier(const ZooDataset& dataset);
+	explicit Classifier(const ZooDataset& trainingSet);
+	uint8_t classify(ZooDataset::RowVector point) const;
 
-	ZooDataset::CovarianceMatrix cmInverse;
-	double cmDeterminant;
-	ZooDataset::MeanRowVector means;
+private:
+	std::vector<ZooDataset::CovarianceMatrix> cmInverses;
+	std::vector<double> cmDeterminants;
+	std::vector<ZooDataset::RowVector> meanVectors;
 };
 
 #endif /* CLASSIFIER_H_ */
