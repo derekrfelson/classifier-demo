@@ -38,17 +38,11 @@ Classifier::Classifier(const ZooDataset& trainingSet)
 
 uint8_t Classifier::classify(ZooDataset::RowVector point) const
 {
-	auto bestType = 0;
-	Decimal bestValue = 0;
-
-	//for (auto a = 0; a < ZooDataset::NumClasses - 1; ++a)
 	for (auto a = 0; a < ZooDataset::NumClasses; ++a)
 	{
-		// Assume that A is our best class
-		bestType = a;
+		auto allPositive = true;
 
 		// Compare A to everything else too see if anything is better
-		//for (auto b = a + 1; b < ZooDataset::NumClasses; ++b)
 		for (auto b = 0; b < ZooDataset::NumClasses; ++b)
 		{
 			if (a == b)
@@ -65,22 +59,20 @@ uint8_t Classifier::classify(ZooDataset::RowVector point) const
 					   * cmInverses[a]
 					   * (point - meanVectors[a]).transpose();
 
-			std::cout << "  Comparing " << (a+1) << " to " << (b+1) << " = " << value << std::endl;
-
-			if (value < 0) // point is further from a's mean than b's mean
+			if (value < 0)
 			{
-				bestType = b;
-				//break;
+				// The point was closer to the other mean, so reject class A
+				allPositive = false;
+				break;
 			}
 		}
 
 		// If we didn't find anything better, A really is our best class
-		if (bestType == a)
+		if (allPositive)
 		{
-			std::cout << "  Good class was " << static_cast<int>(a+1) << std::endl;
-			//break;
+			return a + 1; // Types start at index 1, but vectors at index 0
 		}
 	}
 
-	return bestType + 1; // Types start at index 1, but vectors at index 0
+	assert(false); // Failed to find a class the point was closest to
 }
