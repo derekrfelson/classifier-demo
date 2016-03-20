@@ -17,13 +17,13 @@ template <typename T>
 struct Partition
 {
 public:
-	Partition(T training, T testing);
+	Partition(const T& training, const T& testing);
 	T training;
 	T testing;
 };
 
 template <typename T>
-Partition<T>::Partition(T training, T testing)
+Partition<T>::Partition(const T& training, const T& testing)
 : training{training},
   testing{testing}
 {
