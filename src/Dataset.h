@@ -17,6 +17,13 @@
 class Classifier;
 enum class ClassifierType : uint8_t;
 
+constexpr auto ZooFields = 16;
+constexpr auto ZooClasses = 7;
+constexpr auto CpuFields = 7;
+constexpr auto CpuClasses = 8;
+constexpr auto HeartDiseaseFields = 13;
+constexpr auto HeartDiseaseClasses = 5;
+
 class Dataset
 {
 public:
@@ -54,5 +61,8 @@ Dataset::CovarianceMatrix getPseudoInverse(
 		const Dataset::CovarianceMatrix& matrix);
 Dataset::Decimal getPseudoDeterminant(
 		const Dataset::CovarianceMatrix& matrix);
+Dataset readZooDataset(std::string filename);
+Dataset readCpuDataset(std::string filename);
+Dataset readHeartDiseaseDataset(std::string filename);
 
 #endif /* DATASET_H_ */

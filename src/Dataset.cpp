@@ -30,11 +30,6 @@ Dataset::Dataset(std::vector<std::string> names, TypeVector types,
 {
 }
 
-size_t Dataset::size() const
-{
-	return names.size();
-}
-
 /**
  * Separates the dataset into training and testing sets. The result will
  * be a partition where testing = elements in [startIndex, endIndex],
@@ -146,9 +141,26 @@ Dataset Dataset::getSubsetByClass(uint8_t type) const
 		std::move(subsetData), NumClasses};
 }
 
-RowVector Dataset::getMeans() const
+Classifier Dataset::classifier(ClassifierType type) const
 {
-	return data.colwise().mean();
+	std::vector<CovarianceMatrix> cmInverses;
+	std::vector<Decimal> cmDeterminants;
+	std::vector<RowVector> meanVectors;
+	cmInverses.reserve(NumClasses);
+	cmDeterminants.reserve(NumClasses);
+	meanVectors.reserve(NumClasses);
+
+	// Split the training data into classes
+	for (auto i = 1; i <= NumClasses; ++i)
+	{
+		auto trainingClass = getSubsetByClass(i);
+		auto cv = trainingClass.getCovarianceMatrix(type);
+		cmInverses.push_back(getPseudoInverse(cv));
+		cmDeterminants.push_back(getPseudoDeterminant(cv));
+		meanVectors.push_back(trainingClass.getMeans());
+	}
+
+	return Classifier{cmInverses, cmDeterminants, meanVectors};
 }
 
 CovarianceMatrix Dataset::getCovarianceMatrix(ClassifierType type) const
@@ -181,6 +193,16 @@ CovarianceMatrix Dataset::getCovarianceMatrix(ClassifierType type) const
 	}
 }
 
+RowVector Dataset::getMeans() const
+{
+	return data.colwise().mean();
+}
+
+size_t Dataset::size() const
+{
+	return names.size();
+}
+
 Dataset::RowVector Dataset::getPoint(size_t i) const
 {
 	assert(i < data.rows());
@@ -199,30 +221,7 @@ std::string Dataset::getName(size_t i) const
 	return names[i];
 }
 
-Classifier Dataset::classifier(ClassifierType type) const
-{
-	std::vector<CovarianceMatrix> cmInverses;
-	std::vector<Decimal> cmDeterminants;
-	std::vector<RowVector> meanVectors;
-	cmInverses.reserve(NumClasses);
-	cmDeterminants.reserve(NumClasses);
-	meanVectors.reserve(NumClasses);
-
-	// Split the training data into classes
-	for (auto i = 1; i <= NumClasses; ++i)
-	{
-		auto trainingClass = getSubsetByClass(i);
-		auto cv = trainingClass.getCovarianceMatrix(type);
-		cmInverses.push_back(getPseudoInverse(cv));
-		cmDeterminants.push_back(getPseudoDeterminant(cv));
-		meanVectors.push_back(trainingClass.getMeans());
-	}
-
-	return Classifier{cmInverses, cmDeterminants, meanVectors};
-}
-
-Dataset::CovarianceMatrix getPseudoInverse(
-		const Dataset::CovarianceMatrix& matrix)
+CovarianceMatrix getPseudoInverse(const CovarianceMatrix& matrix)
 {
 	auto svd = matrix.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
 
@@ -264,7 +263,6 @@ Decimal getPseudoDeterminant(
 		const Dataset::CovarianceMatrix& matrix)
 {
 	auto svs = matrix.jacobiSvd().singularValues();
-	assert(svs.rows() == 16);
 
 	Decimal product = 1;
 	for (auto i = 0; i < svs.rows(); ++i)
@@ -276,4 +274,163 @@ Decimal getPseudoDeterminant(
 	}
 
 	return product;
+}
+
+Dataset readDataset(std::string filename,
+		size_t numFields,
+		size_t numClasses,
+		std::function<std::string(std::stringstream&)> nameReader,
+		std::function<uint8_t(std::stringstream&)> typeReader)
+{
+	auto line = std::string{};
+
+	// Figure out the size of the matrix and vectors we'll need
+	auto file = std::ifstream{filename};
+	auto numLines = 0;
+	while(std::getline(file, line))
+	{
+		++numLines;
+	}
+
+	// Return to the start of the file
+	file.clear();
+	file.seekg(0, std::ios::beg);
+
+	// Initialize our vectors to the right size
+	Dataset::TypeVector types(numLines, 1);
+	Dataset::DataMatrix data(numLines, numFields);
+	std::vector<std::string> names{};
+	names.reserve(numLines);
+
+	for (auto i = 0; i < numLines; ++i)
+	{
+		// Read the line
+		std::getline(file, line);
+
+		// Local variables
+		auto ssLine = std::stringstream{line};
+		auto field = std::string{};
+
+		// Read the name
+		names.push_back(nameReader(ssLine));
+
+		// Read the data fields
+		for (auto j = 0; j < numFields; ++j)
+		{
+			assert(std::getline(ssLine, field, ','));
+			data(i, j) = std::stoi(field);
+		}
+
+		// Read the class/type
+		types[i] = typeReader(ssLine);
+
+		// Must be at end of string now
+		assert(!std::getline(ssLine, field, ','));
+	}
+
+	// Sanity check
+	assert(names.size() == data.rows() && data.rows() == types.rows());
+
+	// We must be at the end of the file now
+	assert(!std::getline(file, line));
+
+	return Dataset{names, types, data, numClasses};
+}
+
+// Zoo data format has one name: wolf, bat, etc.
+auto zooNameReader = [](std::stringstream& ssLine) {
+	std::string field;
+	std::getline(ssLine, field, ',');
+	return field;
+};
+
+// CPU data format has two fields: make and model
+auto cpuNameReader = [](std::stringstream& ssLine) {
+	std::string field1;
+	std::string field2;
+	std::getline(ssLine, field1, ',');
+	std::getline(ssLine, field2, ',');
+	return std::string(field1 + " " + field2);
+};
+
+// Heart Disease data format has no name, because patients are anonymous
+auto heartDiseaseNameReader = [](std::stringstream& ssLine) {
+	return "anon";
+};
+
+// Zoo data format has type as last field, no modification needed
+auto zooTypeReader = [](std::stringstream& ssLine) {
+	std::string field;
+	std::getline(ssLine, field, ',');
+	return std::stoi(field);
+};
+
+// CPU data format has two fields: make and model
+auto cpuTypeReader = [](std::stringstream& ssLine) {
+	std::string field;
+	std::getline(ssLine, field, ',');
+	auto performance = std::stoi(field);
+	uint8_t type;
+
+	assert(performance >= 1);
+
+	if (performance <= 20)
+	{
+		type = 1;
+	}
+	else if (performance <= 100)
+	{
+		type = 2;
+	}
+	else if (performance <= 200)
+	{
+		type = 3;
+	}
+	else if (performance <= 300)
+	{
+		type = 4;
+	}
+	else if (performance <= 400)
+	{
+		type = 5;
+	}
+	else if (performance <= 500)
+	{
+		type = 6;
+	}
+	else if (performance <= 600)
+	{
+		type = 7;
+	}
+	else
+	{
+		type = 8;
+	}
+
+	return type;
+};
+
+// Heart Disease data format stores type-1 instead of type
+auto heartDiseaseTypeReader = [](std::stringstream& ssLine) {
+	std::string field;
+	std::getline(ssLine, field, ',');
+	return std::stoi(field) + 1;
+};
+
+Dataset readZooDataset(std::string filename)
+{
+	return readDataset(filename, ZooFields, ZooClasses,
+			zooNameReader, zooTypeReader);
+}
+
+Dataset readCpuDataset(std::string filename)
+{
+	return readDataset(filename, CpuFields, CpuClasses,
+			cpuNameReader, cpuTypeReader);
+}
+
+Dataset readHeartDiseaseDataset(std::string filename)
+{
+	return readDataset(filename, HeartDiseaseFields, HeartDiseaseClasses,
+			heartDiseaseNameReader, heartDiseaseTypeReader);
 }

@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include "../src/ZooDataset.h"
 #include "../src/Dataset.h"
 #include "../src/Partition.h"
 #include "../src/Classifier.h"

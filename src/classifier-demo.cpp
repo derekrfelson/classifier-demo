@@ -1,8 +1,9 @@
 #include <iostream>
+#include <string>
+#include <array>
 #include "Classifier.h"
 #include "Partition.h"
 #include "Dataset.h"
-#include "ZooDataset.h"
 
 using CovarianceMatrix = Dataset::CovarianceMatrix;
 using MeanRowVector = Dataset::RowVector;
@@ -13,36 +14,51 @@ void classifyAndTest(const Dataset& data,
 
 int main(int argc, char** argv)
 {
-	auto zooData = readZooDataset("../data/zoo.csv");
+	std::array<Dataset, 3> datasets {
+			readZooDataset("../data/zoo.csv"),
+			readCpuDataset("../data/cpu.csv"),
+			readHeartDiseaseDataset("../data/heartDisease.csv")
+	};
 
-	std::cout << "Zoo data using 10-fold cross-validation "
-			  << "(Optimal Bayes classifier)" << std::endl << std::endl;
-	classifyAndTest(zooData, 10, ClassifierType::OPTIMAL);
+	std::array<std::string, 3> datasetLabels = {
+			"Zoo", "CPU", "Heart Disease"
+	};
 
-	std::cout << std::endl;
-	std::cout << "Zoo data using leave-one-out cross-validation "
-			  << "(Optimal Bayes classifier)" << std::endl << std::endl;
-	classifyAndTest(zooData, zooData.size(), ClassifierType::OPTIMAL);
+	std::array<ClassifierType, 3> classifierTypes = {
+			ClassifierType::OPTIMAL,
+			ClassifierType::NAIVE,
+			ClassifierType::LINEAR
+	};
 
-	std::cout << std::endl;
-	std::cout << "Zoo data using 10-fold cross-validation "
-			  << "(Naive Bayes classifier)" << std::endl << std::endl;
-	classifyAndTest(zooData, 10, ClassifierType::NAIVE);
+	std::array<std::string, 3> classifierTypeLabels = {
+			"Optimal",
+			"Naive",
+			"Linear"
+	};
 
-	std::cout << std::endl;
-	std::cout << "Zoo data using leave-one-out cross-validation "
-	 	      << "(Naive Bayes classifier)" << std::endl << std::endl;
-	classifyAndTest(zooData, zooData.size(), ClassifierType::NAIVE);
+	for (auto datasetNum = 0; datasetNum < 3; ++datasetNum)
+	{
+		for (auto classifierNum = 0; classifierNum < 3; ++classifierNum)
+		{
+			std::cout << datasetLabels[datasetNum]
+					  << " data using 10-fold cross-validation "
+					  << "(" << classifierTypeLabels[classifierNum]
+					  << " Bayes classifier)"
+					  << std::endl << std::endl;
+			classifyAndTest(datasets[datasetNum],
+					10,
+					classifierTypes[classifierNum]);
 
-	std::cout << std::endl;
-	std::cout << "Zoo data using 10-fold cross-validation "
-			  << "(Linear Bayes classifier)" << std::endl << std::endl;
-	classifyAndTest(zooData, 10, ClassifierType::LINEAR);
-
-	std::cout << std::endl;
-	std::cout << "Zoo data using leave-one-out cross-validation "
-	 	      << "(Linear Bayes classifier)" << std::endl << std::endl;
-	classifyAndTest(zooData, zooData.size(), ClassifierType::LINEAR);
+			std::cout << datasetLabels[datasetNum]
+					  << " data using leave-one-out cross-validation "
+					  << "(" << classifierTypeLabels[classifierNum]
+					  << " Bayes classifier)"
+					  << std::endl << std::endl;
+			classifyAndTest(datasets[datasetNum],
+					datasets[datasetNum].size(),
+					classifierTypes[classifierNum]);
+		}
+	}
 
 	return 0;
 }
@@ -88,12 +104,15 @@ void classifyAndTest(const Dataset& data,
 			}
 		}
 
-		// Report the accuracy on this fold
-		std::cout << "Fold " << k << ": timesRight=" << timesRight[k-1]
-		          << ", timesWrong=" << timesWrong[k-1]
-		          << ", accuracy: " << timesRight[k-1]/
-					 static_cast<double>(timesWrong[k-1]+timesRight[k-1])
-				  << std::endl << std::endl;
+		// Report the accuracy on this fold (unless we're just doing 1 element)
+		if (partitions.testing.size() > 1)
+		{
+			std::cout << "Fold " << k << ": timesRight=" << timesRight[k-1]
+					  << ", timesWrong=" << timesWrong[k-1]
+		              << ", accuracy: " << timesRight[k-1]/
+					     static_cast<double>(timesWrong[k-1]+timesRight[k-1])
+				      << std::endl << std::endl;
+		}
 
 		// Update overall accuracy
 		totalTimesRight += timesRight[k-1];
@@ -105,6 +124,6 @@ void classifyAndTest(const Dataset& data,
 			  << ", timesWrong=" << totalTimesWrong
 			  << ", accuracy=" << totalTimesRight
 			      / static_cast<double>(totalTimesRight + totalTimesWrong)
-			  << std::endl;
+			  << std::endl << std::endl << std::endl;
 }
 
