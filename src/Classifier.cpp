@@ -14,26 +14,14 @@
 
 using Decimal = ZooDataset::Decimal;
 
-Classifier::Classifier(const ZooDataset& trainingSet)
-: cmInverses{},
-  cmDeterminants{},
-  meanVectors{}
+Classifier::Classifier(
+		const std::vector<ZooDataset::CovarianceMatrix>& cmInverses,
+		const std::vector<ZooDataset::Decimal>& cmDeterminants,
+		const std::vector<ZooDataset::RowVector>& meanVectors)
+: cmInverses{cmInverses},
+  cmDeterminants{cmDeterminants},
+  meanVectors{meanVectors}
 {
-	cmInverses.reserve(ZooDataset::NumClasses);
-	cmDeterminants.reserve(ZooDataset::NumClasses);
-	meanVectors.reserve(ZooDataset::NumClasses);
-
-	// Split the training data into classes
-	for (auto i = 1; i <= ZooDataset::NumClasses; ++i)
-	{
-		auto trainingClass = trainingSet.getSubsetByClass(i);
-		cmInverses.push_back(
-				trainingClass.getCovarianceMatrixInverse());
-		cmDeterminants.push_back(
-				trainingClass.getCovarianceMatrixDeterminant());
-		meanVectors.push_back(
-				trainingClass.getMeans());
-	}
 }
 
 uint8_t Classifier::classify(ZooDataset::RowVector point) const

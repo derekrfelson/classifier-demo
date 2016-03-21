@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "../src/ZooDataset.h"
 #include "../src/Partition.h"
+#include "../src/Classifier.h"
 #include <iostream>
 
 using Decimal = ZooDataset::Decimal;

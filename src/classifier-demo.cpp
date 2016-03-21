@@ -1,5 +1,4 @@
 #include <iostream>
-#include <array>
 #include "Classifier.h"
 #include "Partition.h"
 #include "ZooDataset.h"
@@ -7,26 +6,49 @@
 using CovarianceMatrix = ZooDataset::CovarianceMatrix;
 using MeanRowVector = ZooDataset::RowVector;
 
-void classifyAndTest(const ZooDataset& data, unsigned int numFolds);
+void classifyAndTest(const ZooDataset& data,
+		unsigned int numFolds,
+		ClassifierType ctype);
 
 int main(int argc, char** argv)
 {
 	ZooDataset zooData{"../data/zoo.csv"};
 
-	std::cout << "Zoo data using 10-fold cross-validation"
-			<< std::endl << std::endl;
-	classifyAndTest(zooData, 10);
+	std::cout << "Zoo data using 10-fold cross-validation "
+			  << "(Optimal Bayes classifier)" << std::endl << std::endl;
+	classifyAndTest(zooData, 10, ClassifierType::OPTIMAL);
 
 	std::cout << std::endl;
+	std::cout << "Zoo data using leave-one-out cross-validation "
+			  << "(Optimal Bayes classifier)" << std::endl << std::endl;
+	classifyAndTest(zooData, zooData.size(), ClassifierType::OPTIMAL);
 
-	std::cout << "Zoo data using leave-one-out cross-validation" << std::endl
-			<< std::endl;
-	classifyAndTest(zooData, zooData.size());
+	std::cout << std::endl;
+	std::cout << "Zoo data using 10-fold cross-validation "
+			  << "(Naive Bayes classifier)" << std::endl << std::endl;
+	classifyAndTest(zooData, 10, ClassifierType::NAIVE);
+
+	std::cout << std::endl;
+	std::cout << "Zoo data using leave-one-out cross-validation "
+	 	      << "(Naive Bayes classifier)" << std::endl << std::endl;
+	classifyAndTest(zooData, zooData.size(), ClassifierType::NAIVE);
+
+	std::cout << std::endl;
+	std::cout << "Zoo data using 10-fold cross-validation "
+			  << "(Linear Bayes classifier)" << std::endl << std::endl;
+	classifyAndTest(zooData, 10, ClassifierType::LINEAR);
+
+	std::cout << std::endl;
+	std::cout << "Zoo data using leave-one-out cross-validation "
+	 	      << "(Linear Bayes classifier)" << std::endl << std::endl;
+	classifyAndTest(zooData, zooData.size(), ClassifierType::LINEAR);
 
 	return 0;
 }
 
-void classifyAndTest(const ZooDataset& data, unsigned int numFolds)
+void classifyAndTest(const ZooDataset& data,
+		unsigned int numFolds,
+		ClassifierType ctype)
 {
 	std::vector<unsigned int> timesRight(numFolds, 0);
 	std::vector<unsigned int> timesWrong(numFolds, 0);
@@ -41,7 +63,7 @@ void classifyAndTest(const ZooDataset& data, unsigned int numFolds)
 		auto partitions = data.partition(indices.first, indices.second);
 
 		// Create a classifier for the dataset
-		Classifier c{partitions.training};
+		auto c = partitions.training.classifier(ctype);
 
 		// Test each point in the testing set
 		for (auto i = 0; i < partitions.testing.size(); ++i)

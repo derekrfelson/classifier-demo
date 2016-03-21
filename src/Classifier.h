@@ -12,10 +12,20 @@
 #include <cstdint>
 #include "ZooDataset.h"
 
+enum class ClassifierType : uint8_t
+{
+	OPTIMAL,
+	NAIVE,
+	LINEAR
+};
+
 struct Classifier
 {
 public:
-	explicit Classifier(const ZooDataset& trainingSet);
+	explicit Classifier(
+			const std::vector<ZooDataset::CovarianceMatrix>& cmInverses,
+			const std::vector<ZooDataset::Decimal>& cmDeterminants,
+			const std::vector<ZooDataset::RowVector>& meanVectors);
 	uint8_t classify(ZooDataset::RowVector point) const;
 
 private:

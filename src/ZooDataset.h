@@ -11,7 +11,10 @@
 #include <string>
 #include <eigen3/Eigen/Dense>
 #include <memory>
+#include <cstdint>
 #include "Partition.h"
+class Classifier;
+enum class ClassifierType : uint8_t;
 
 class ZooDataset
 {
@@ -32,12 +35,11 @@ public:
 	RowVector getMeans() const;
 	ZooDataset getSubsetByClass(uint8_t type) const;
 	Partition<ZooDataset> partition(size_t startIndex, size_t endIndex) const;
-	CovarianceMatrix getCovarianceMatrixInverse() const;
-	Decimal getCovarianceMatrixDeterminant() const;
 	RowVector getPoint(size_t i) const;
 	uint8_t getType(size_t i) const;
 	std::string getName(size_t i) const;
-	CovarianceMatrix getCovarianceMatrix() const;
+	CovarianceMatrix getCovarianceMatrix(ClassifierType type) const;
+	Classifier classifier(ClassifierType type) const;
 
 private:
 	explicit ZooDataset(std::vector<std::string> names,
@@ -47,5 +49,10 @@ private:
 	TypeVector types;
 	DataMatrix data;
 };
+
+ZooDataset::CovarianceMatrix getPseudoInverse(
+		const ZooDataset::CovarianceMatrix& matrix);
+ZooDataset::Decimal getPseudoDeterminant(
+		const ZooDataset::CovarianceMatrix& matrix);
 
 #endif /* ZOODATASET_H_ */

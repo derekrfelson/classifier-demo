@@ -5,13 +5,14 @@
  *      Author: derek
  */
 
-#include "ZooDataset.h"
 #include <fstream>
 #include <vector>
 #include <memory>
 #include <string>
 #include <iostream>
 #include <eigen3/Eigen/SVD>
+#include "ZooDataset.h"
+#include "Classifier.h"
 
 using Decimal = ZooDataset::Decimal;
 
@@ -207,19 +208,81 @@ ZooDataset::RowVector ZooDataset::getMeans() const
 	return data.cast<Decimal>().colwise().mean();
 }
 
-ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrix() const
+ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrix(
+		ClassifierType type) const
 {
+	if (type == ClassifierType::LINEAR)
+	{
+		// Linear Bayes classifier assumes that all dimensions
+		// are independent and have the same variance, so our
+		// covariance matrix is just the identity matrix.
+		return CovarianceMatrix::Identity();
+	}
+
 	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> centered
 		= data.cast<Decimal>().rowwise() - getMeans();
 	CovarianceMatrix cov = (centered.transpose() * centered)
 			/ static_cast<Decimal>(data.rows() - 1);
-	return cov;
+
+	// Return the correct type of covariance matrix
+	if (type == ClassifierType::OPTIMAL)
+	{
+		// Optimal Bayes classifier uses the full covariance matrix.
+		return cov;
+	}
+	else
+	{
+		// Naive Bayes classifier assumes all dimensions independent,
+		// so we set all the non-diagonal entries in the covariance
+		// matrix to zero.
+		return cov.diagonal().asDiagonal();
+	}
 }
 
-ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrixInverse() const
+ZooDataset::RowVector ZooDataset::getPoint(size_t i) const
 {
-	auto svd = getCovarianceMatrix().jacobiSvd(
-			Eigen::ComputeFullU | Eigen::ComputeFullV);
+	assert(i < data.rows());
+	return data.row(i).cast<Decimal>();
+}
+
+uint8_t ZooDataset::getType(size_t i) const
+{
+	assert(i < types.rows());
+	return types[i];
+}
+
+std::string ZooDataset::getName(size_t i) const
+{
+	assert(i < names.size());
+	return names[i];
+}
+
+Classifier ZooDataset::classifier(ClassifierType type) const
+{
+	std::vector<CovarianceMatrix> cmInverses;
+	std::vector<Decimal> cmDeterminants;
+	std::vector<RowVector> meanVectors;
+	cmInverses.reserve(NumClasses);
+	cmDeterminants.reserve(NumClasses);
+	meanVectors.reserve(NumClasses);
+
+	// Split the training data into classes
+	for (auto i = 1; i <= NumClasses; ++i)
+	{
+		auto trainingClass = getSubsetByClass(i);
+		auto cv = trainingClass.getCovarianceMatrix(type);
+		cmInverses.push_back(getPseudoInverse(cv));
+		cmDeterminants.push_back(getPseudoDeterminant(cv));
+		meanVectors.push_back(trainingClass.getMeans());
+	}
+
+	return Classifier(cmInverses, cmDeterminants, meanVectors);
+}
+
+ZooDataset::CovarianceMatrix getPseudoInverse(
+		const ZooDataset::CovarianceMatrix& matrix)
+{
+	auto svd = matrix.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
 
 	auto pinvS = svd.singularValues();
 	for (auto i = 0; i < pinvS.rows(); ++i)
@@ -255,9 +318,10 @@ ZooDataset::CovarianceMatrix ZooDataset::getCovarianceMatrixInverse() const
 	return pinvM;
 }
 
-Decimal ZooDataset::getCovarianceMatrixDeterminant() const
+Decimal getPseudoDeterminant(
+		const ZooDataset::CovarianceMatrix& matrix)
 {
-	auto svs = getCovarianceMatrix().jacobiSvd().singularValues();
+	auto svs = matrix.jacobiSvd().singularValues();
 	assert(svs.rows() == 16);
 
 	Decimal product = 1;
@@ -270,22 +334,4 @@ Decimal ZooDataset::getCovarianceMatrixDeterminant() const
 	}
 
 	return product;
-}
-
-ZooDataset::RowVector ZooDataset::getPoint(size_t i) const
-{
-	assert(i < data.rows());
-	return data.row(i).cast<Decimal>();
-}
-
-uint8_t ZooDataset::getType(size_t i) const
-{
-	assert(i < types.rows());
-	return types[i];
-}
-
-std::string ZooDataset::getName(size_t i) const
-{
-	assert(i < names.size());
-	return names[i];
 }
