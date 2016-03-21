@@ -7,24 +7,38 @@
 using CovarianceMatrix = ZooDataset::CovarianceMatrix;
 using MeanRowVector = ZooDataset::RowVector;
 
+void classifyAndTest(const ZooDataset& data, unsigned int numFolds);
+
 int main(int argc, char** argv)
 {
 	ZooDataset zooData{"../data/zoo.csv"};
 
-	constexpr auto numFolds = 10;
+	std::cout << "Zoo data using 10-fold cross-validation"
+			<< std::endl << std::endl;
+	classifyAndTest(zooData, 10);
 
-	std::array<unsigned int, numFolds> timesRight;
-	std::array<unsigned int, numFolds> timesWrong;
+	std::cout << std::endl;
 
+	std::cout << "Zoo data using leave-one-out cross-validation" << std::endl
+			<< std::endl;
+	classifyAndTest(zooData, zooData.size());
+
+	return 0;
+}
+
+void classifyAndTest(const ZooDataset& data, unsigned int numFolds)
+{
+	std::vector<unsigned int> timesRight(numFolds, 0);
+	std::vector<unsigned int> timesWrong(numFolds, 0);
+	auto totalTimesRight = 0;
+	auto totalTimesWrong = 0;
+
+	// Classify and test the data
 	for (auto k = 1; k <= numFolds; ++k)
 	{
-		timesRight[k-1] = 0;
-		timesWrong[k-1] = 0;
-		std::cout << "Fold " << k << std::endl;
-
 		// Partition into testing and training sets
-		auto indices = kFoldIndices(k, numFolds, zooData.size());
-		auto partitions = zooData.partition(indices.first, indices.second);
+		auto indices = kFoldIndices(k, numFolds, data.size());
+		auto partitions = data.partition(indices.first, indices.second);
 
 		// Create a classifier for the dataset
 		Classifier c{partitions.training};
@@ -32,12 +46,15 @@ int main(int argc, char** argv)
 		// Test each point in the testing set
 		for (auto i = 0; i < partitions.testing.size(); ++i)
 		{
+			// Classify
 			auto type = c.classify(partitions.testing.getPoint(i));
+
 			std::cout << "Decided class " << static_cast<int>(type)
 					<< " for " << partitions.testing.getName(i) << " (actual "
 					<< static_cast<int>(partitions.testing.getType(i))
 					<< "): " << partitions.testing.getPoint(i) << std::endl;
 
+			// Update counters
 			if (type == partitions.testing.getType(i))
 			{
 				++timesRight[k-1];
@@ -47,28 +64,24 @@ int main(int argc, char** argv)
 				++timesWrong[k-1];
 			}
 		}
-	}
 
-	auto totalTimesRight = 0;
-	auto totalTimesWrong = 0;
-
-	for (auto k = 1; k <= numFolds; ++k)
-	{
+		// Report the accuracy on this fold
 		std::cout << "Fold " << k << ": timesRight=" << timesRight[k-1]
-                  << ", timesWrong=" << timesWrong[k-1]
-                  << ", accuracy: " << timesRight[k-1]/
-				      static_cast<double>(timesWrong[k-1]+timesRight[k-1])
-			      << std::endl;
+		          << ", timesWrong=" << timesWrong[k-1]
+		          << ", accuracy: " << timesRight[k-1]/
+					 static_cast<double>(timesWrong[k-1]+timesRight[k-1])
+				  << std::endl << std::endl;
+
+		// Update overall accuracy
 		totalTimesRight += timesRight[k-1];
 		totalTimesWrong += timesWrong[k-1];
 	}
 
+	// Report overall accuracy
 	std::cout << "Total: timesRight=" << totalTimesRight
 			  << ", timesWrong=" << totalTimesWrong
 			  << ", accuracy=" << totalTimesRight
 			      / static_cast<double>(totalTimesRight + totalTimesWrong)
 			  << std::endl;
-
-	return 0;
 }
 
