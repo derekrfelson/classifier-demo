@@ -20,7 +20,7 @@ enum class ClassifierType : uint8_t;
 constexpr auto ZooFields = 16;
 constexpr auto ZooClasses = 7;
 constexpr auto CpuFields = 7;
-constexpr auto CpuClasses = 8;
+constexpr auto CpuClasses = 7;
 constexpr auto HeartDiseaseFields = 13;
 constexpr auto HeartDiseaseClasses = 5;
 

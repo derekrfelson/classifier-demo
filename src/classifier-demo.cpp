@@ -10,18 +10,21 @@ using MeanRowVector = Dataset::RowVector;
 
 void classifyAndTest(const Dataset& data,
 		unsigned int numFolds,
-		ClassifierType ctype);
+		ClassifierType ctype,
+		int verbosity);
 
 int main(int argc, char** argv)
 {
+	auto verbosity = argc - 1;
+
 	std::array<Dataset, 3> datasets {
 			readZooDataset("../data/zoo.csv"),
-			readCpuDataset("../data/cpu.csv"),
-			readHeartDiseaseDataset("../data/heartDisease.csv")
+			readHeartDiseaseDataset("../data/heartDisease.csv"),
+			readCpuDataset("../data/cpu.csv")
 	};
 
 	std::array<std::string, 3> datasetLabels = {
-			"Zoo", "CPU", "Heart Disease"
+			"Zoo", "Heart Disease", "CPU"
 	};
 
 	std::array<ClassifierType, 3> classifierTypes = {
@@ -47,7 +50,8 @@ int main(int argc, char** argv)
 					  << std::endl << std::endl;
 			classifyAndTest(datasets[datasetNum],
 					10,
-					classifierTypes[classifierNum]);
+					classifierTypes[classifierNum],
+					verbosity);
 
 			std::cout << datasetLabels[datasetNum]
 					  << " data using leave-one-out cross-validation "
@@ -56,7 +60,8 @@ int main(int argc, char** argv)
 					  << std::endl << std::endl;
 			classifyAndTest(datasets[datasetNum],
 					datasets[datasetNum].size(),
-					classifierTypes[classifierNum]);
+					classifierTypes[classifierNum],
+					verbosity);
 		}
 	}
 
@@ -65,7 +70,8 @@ int main(int argc, char** argv)
 
 void classifyAndTest(const Dataset& data,
 		unsigned int numFolds,
-		ClassifierType ctype)
+		ClassifierType ctype,
+		int verbosity)
 {
 	std::vector<unsigned int> timesRight(numFolds, 0);
 	std::vector<unsigned int> timesWrong(numFolds, 0);
@@ -88,10 +94,13 @@ void classifyAndTest(const Dataset& data,
 			// Classify
 			auto type = c.classify(partitions.testing.getPoint(i));
 
-			std::cout << "Decided class " << static_cast<int>(type)
+			if (verbosity > 1)
+			{
+				std::cout << "Decided class " << static_cast<int>(type)
 					<< " for " << partitions.testing.getName(i) << " (actual "
 					<< static_cast<int>(partitions.testing.getType(i))
 					<< "): " << partitions.testing.getPoint(i) << std::endl;
+			}
 
 			// Update counters
 			if (type == partitions.testing.getType(i))
@@ -105,7 +114,7 @@ void classifyAndTest(const Dataset& data,
 		}
 
 		// Report the accuracy on this fold (unless we're just doing 1 element)
-		if (partitions.testing.size() > 1)
+		if (partitions.testing.size() > 1 && verbosity > 0)
 		{
 			std::cout << "Fold " << k << ": timesRight=" << timesRight[k-1]
 					  << ", timesWrong=" << timesWrong[k-1]
