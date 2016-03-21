@@ -1,20 +1,21 @@
 #include <gtest/gtest.h>
 #include "../src/ZooDataset.h"
+#include "../src/Dataset.h"
 #include "../src/Partition.h"
 #include "../src/Classifier.h"
 #include <iostream>
 
-using Decimal = ZooDataset::Decimal;
+using Decimal = Dataset::Decimal;
 
 TEST(ZooDatasetTests, SizeOfDatafile)
 {
-	auto zooData = ZooDataset{"../data/zoo.csv"};
+	auto zooData = readZooDataset("../data/zoo.csv");
 	EXPECT_EQ(101, zooData.size());
 }
 
 TEST(ZooDatasetTests, PartitionLeavingOneOut)
 {
-	auto zooData = ZooDataset{"../data/zoo.csv"};
+	auto zooData = readZooDataset("../data/zoo.csv");
 
 	for (auto i = 0; i < 3; ++i)
 	{
@@ -30,7 +31,7 @@ TEST(ZooDatasetTests, PartitionLeavingOneOut)
 
 TEST(ZooDatasetTests, PartitionForKFold)
 {
-	auto zooData = ZooDataset{"../data/zoo.csv"};
+	auto zooData = readZooDataset("../data/zoo.csv");
 
 	for (auto i = 1; i < 5; ++i)
 	{
@@ -48,7 +49,7 @@ TEST(ZooDatasetTests, PartitionForKFold)
 
 TEST(ZooDatasetTests, Means)
 {
-	auto zooData = ZooDataset{"../data/zooMeanTest.csv"};
+	auto zooData = readZooDataset("../data/zooMeanTest.csv");
 	EXPECT_EQ(4, zooData.size());
 
 	auto means = zooData.getMeans();

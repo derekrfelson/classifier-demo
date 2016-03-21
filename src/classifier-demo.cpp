@@ -1,18 +1,19 @@
 #include <iostream>
 #include "Classifier.h"
 #include "Partition.h"
+#include "Dataset.h"
 #include "ZooDataset.h"
 
-using CovarianceMatrix = ZooDataset::CovarianceMatrix;
-using MeanRowVector = ZooDataset::RowVector;
+using CovarianceMatrix = Dataset::CovarianceMatrix;
+using MeanRowVector = Dataset::RowVector;
 
-void classifyAndTest(const ZooDataset& data,
+void classifyAndTest(const Dataset& data,
 		unsigned int numFolds,
 		ClassifierType ctype);
 
 int main(int argc, char** argv)
 {
-	ZooDataset zooData{"../data/zoo.csv"};
+	auto zooData = readZooDataset("../data/zoo.csv");
 
 	std::cout << "Zoo data using 10-fold cross-validation "
 			  << "(Optimal Bayes classifier)" << std::endl << std::endl;
@@ -46,7 +47,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-void classifyAndTest(const ZooDataset& data,
+void classifyAndTest(const Dataset& data,
 		unsigned int numFolds,
 		ClassifierType ctype)
 {

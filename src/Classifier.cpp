@@ -8,30 +8,30 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
-#include "ZooDataset.h"
+#include "Dataset.h"
 #include "Classifier.h"
 #include "Partition.h"
 
-using Decimal = ZooDataset::Decimal;
+using Decimal = Dataset::Decimal;
 
 Classifier::Classifier(
-		const std::vector<ZooDataset::CovarianceMatrix>& cmInverses,
-		const std::vector<ZooDataset::Decimal>& cmDeterminants,
-		const std::vector<ZooDataset::RowVector>& meanVectors)
+		const std::vector<Dataset::CovarianceMatrix>& cmInverses,
+		const std::vector<Dataset::Decimal>& cmDeterminants,
+		const std::vector<Dataset::RowVector>& meanVectors)
 : cmInverses{cmInverses},
   cmDeterminants{cmDeterminants},
   meanVectors{meanVectors}
 {
 }
 
-uint8_t Classifier::classify(ZooDataset::RowVector point) const
+uint8_t Classifier::classify(Dataset::RowVector point) const
 {
-	for (auto a = 0; a < ZooDataset::NumClasses; ++a)
+	for (auto a = 0; a < meanVectors.size(); ++a)
 	{
 		auto allPositive = true;
 
 		// Compare A to everything else too see if anything is better
-		for (auto b = 0; b < ZooDataset::NumClasses; ++b)
+		for (auto b = 0; b < meanVectors.size(); ++b)
 		{
 			if (a == b)
 			{

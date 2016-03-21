@@ -1,3 +1,3 @@
 bin_PROGRAMS=classifier
-classifier_SOURCES=classifier-demo.cpp Classifier.cpp ZooDataset.cpp Partition.cpp
+classifier_SOURCES=classifier-demo.cpp Classifier.cpp Partition.cpp Dataset.cpp ZooDataset.cpp
 AM_CXXFLAGS = -std=c++14

@@ -10,7 +10,8 @@
 
 #include <vector>
 #include <cstdint>
-#include "ZooDataset.h"
+#include <eigen3/Eigen/Dense>
+#include "Dataset.h"
 
 enum class ClassifierType : uint8_t
 {
@@ -23,15 +24,15 @@ struct Classifier
 {
 public:
 	explicit Classifier(
-			const std::vector<ZooDataset::CovarianceMatrix>& cmInverses,
-			const std::vector<ZooDataset::Decimal>& cmDeterminants,
-			const std::vector<ZooDataset::RowVector>& meanVectors);
-	uint8_t classify(ZooDataset::RowVector point) const;
+			const std::vector<Dataset::CovarianceMatrix>& cmInverses,
+			const std::vector<Dataset::Decimal>& cmDeterminants,
+			const std::vector<Dataset::RowVector>& meanVectors);
+	uint8_t classify(Dataset::RowVector point) const;
 
 private:
-	std::vector<ZooDataset::CovarianceMatrix> cmInverses;
-	std::vector<ZooDataset::Decimal> cmDeterminants;
-	std::vector<ZooDataset::RowVector> meanVectors;
+	std::vector<Dataset::CovarianceMatrix> cmInverses;
+	std::vector<Dataset::Decimal> cmDeterminants;
+	std::vector<Dataset::RowVector> meanVectors;
 };
 
 #endif /* CLASSIFIER_H_ */
