@@ -50,6 +50,7 @@ public:
 	std::string getName(size_t i) const;
 	CovarianceMatrix getCovarianceMatrix(ClassifierType type) const;
 	Classifier classifier(ClassifierType type) const;
+	DataMatrix getData() const;
 
 private:
 	std::vector<std::string> names;

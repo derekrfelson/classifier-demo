@@ -221,8 +221,20 @@ std::string Dataset::getName(size_t i) const
 	return names[i];
 }
 
+DataMatrix Dataset::getData() const
+{
+	return data;
+}
+
 CovarianceMatrix getPseudoInverse(const CovarianceMatrix& matrix)
 {
+	if (matrix.determinant() != 0)
+	{
+		return matrix.inverse();
+	}
+
+	std::cout << "Using pseudoinverse!" << std::endl;
+
 	auto svd = matrix.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
 
 	auto pinvS = svd.singularValues();
@@ -262,6 +274,11 @@ CovarianceMatrix getPseudoInverse(const CovarianceMatrix& matrix)
 Decimal getPseudoDeterminant(
 		const Dataset::CovarianceMatrix& matrix)
 {
+	if (matrix.determinant() != 0)
+	{
+		return matrix.determinant();
+	}
+
 	auto svs = matrix.jacobiSvd().singularValues();
 
 	Decimal product = 1;
@@ -318,7 +335,7 @@ Dataset readDataset(std::string filename,
 		for (auto j = 0; j < numFields; ++j)
 		{
 			assert(std::getline(ssLine, field, ','));
-			data(i, j) = std::stoi(field);
+			data(i, j) = std::stod(field);
 		}
 
 		// Read the class/type
