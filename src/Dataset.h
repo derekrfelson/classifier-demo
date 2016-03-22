@@ -51,6 +51,7 @@ public:
 	CovarianceMatrix getCovarianceMatrix(ClassifierType type) const;
 	Classifier classifier(ClassifierType type) const;
 	DataMatrix getData() const;
+	void shuffle();
 
 private:
 	std::vector<std::string> names;

@@ -23,6 +23,10 @@ int main(int argc, char** argv)
 			readWineDataset("../data/wine.csv")
 	};
 
+	datasets[0].shuffle();
+	datasets[1].shuffle();
+	datasets[2].shuffle();
+
 	std::array<std::string, 3> datasetLabels = {
 			"Iris", "Heart Disease", "Wine"
 	};

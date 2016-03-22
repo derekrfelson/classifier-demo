@@ -5,10 +5,13 @@
  *      Author: derek
  */
 
+#include <random>
+#include <chrono>
 #include <fstream>
 #include <vector>
 #include <memory>
 #include <string>
+#include <algorithm>
 #include <iostream>
 #include <eigen3/Eigen/SVD>
 #include "Dataset.h"
@@ -224,6 +227,36 @@ std::string Dataset::getName(size_t i) const
 DataMatrix Dataset::getData() const
 {
 	return data;
+}
+
+void Dataset::shuffle()
+{
+	std::vector<int> permutation;
+	permutation.reserve(data.rows());
+	for (auto i = 0; i < data.rows(); ++i)
+	{
+		permutation.push_back(i);
+	}
+
+	unsigned seed =
+			std::chrono::system_clock::now().time_since_epoch().count();
+	std::shuffle(permutation.begin(), permutation.end(),
+			std::default_random_engine(seed));
+
+	auto shuffledNames = names;
+	auto shuffledTypes = types;
+	auto shuffledData = data;
+
+	for (auto i = 0; i < data.rows(); ++i)
+	{
+		shuffledNames[i] = names[permutation[i]];
+		shuffledTypes[i] = types[permutation[i]];
+		shuffledData.row(i) = data.row(permutation[i]);
+	}
+
+	names = shuffledNames;
+	types = shuffledTypes;
+	data = shuffledData;
 }
 
 CovarianceMatrix getPseudoInverse(const CovarianceMatrix& matrix)
