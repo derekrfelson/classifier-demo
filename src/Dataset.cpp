@@ -337,77 +337,40 @@ Dataset readDataset(std::string filename,
 	return Dataset{names, types, data, numClasses};
 }
 
-// Zoo data format has one name: wolf, bat, etc.
-auto zooNameReader = [](std::stringstream& ssLine) {
-	std::string field;
-	std::getline(ssLine, field, ',');
-	return field;
+// Iris data format has no name field
+auto irisNameReader = [](std::stringstream& ssLine) {
+	return "iris";
 };
 
-// CPU data format has two fields: make and model
-auto cpuNameReader = [](std::stringstream& ssLine) {
-	std::string field1;
-	std::string field2;
-	std::getline(ssLine, field1, ',');
-	std::getline(ssLine, field2, ',');
-	return std::string(field1 + " " + field2);
+// Wine has no name
+auto wineNameReader = [](std::stringstream& ssLine) {
+	return "wine";
 };
 
-// Heart Disease data format has no name, because patients are anonymous
+// Heart Disease data format has no name
 auto heartDiseaseNameReader = [](std::stringstream& ssLine) {
-	return "anon";
+	return "heartdisease";
 };
 
-// Zoo data format has type as last field, no modification needed
-auto zooTypeReader = [](std::stringstream& ssLine) {
+// Iris stores type as one of 3 possible strings
+auto irisTypeReader = [](std::stringstream& ssLine) {
 	std::string field;
 	std::getline(ssLine, field, ',');
-	return std::stoi(field);
-};
+	uint8_t ret = 0;
 
-// CPU data format has two fields: make and model
-auto cpuTypeReader = [](std::stringstream& ssLine) {
-	std::string field;
-	std::getline(ssLine, field, ',');
-	auto performance = std::stoi(field);
-	uint8_t type;
-
-	assert(performance >= 1);
-
-	if (performance <= 20)
+	if (field.compare(0, 11, "Iris-setosa") == 0)
 	{
-		type = 1;
+		ret = 1;
 	}
-	else if (performance <= 100)
+	else if (field.compare(0, 15, "Iris-versicolor") == 0)
 	{
-		type = 2;
-	}
-	else if (performance <= 200)
-	{
-		type = 3;
-	}
-	else if (performance <= 300)
-	{
-		type = 4;
-	}
-	else if (performance <= 400)
-	{
-		type = 5;
-	}
-	else if (performance <= 500)
-	{
-		type = 6;
-	}
-	else if (performance <= 600)
-	{
-		type = 7;
+		ret = 2;
 	}
 	else
 	{
-		type = 8;
+		ret = 3;
 	}
-
-	return type;
+	return ret;
 };
 
 // Heart Disease data format stores type-1 instead of type
@@ -417,16 +380,23 @@ auto heartDiseaseTypeReader = [](std::stringstream& ssLine) {
 	return std::stoi(field) + 1;
 };
 
-Dataset readZooDataset(std::string filename)
+// Wine data format stores type as an integer
+auto wineTypeReader = [](std::stringstream& ssLine) {
+	std::string field;
+	std::getline(ssLine, field, ',');
+	return std::stoi(field);
+};
+
+Dataset readIrisDataset(std::string filename)
 {
-	return readDataset(filename, ZooFields, ZooClasses,
-			zooNameReader, zooTypeReader);
+	return readDataset(filename, IrisFields, IrisClasses,
+			irisNameReader, irisTypeReader);
 }
 
-Dataset readCpuDataset(std::string filename)
+Dataset readWineDataset(std::string filename)
 {
-	return readDataset(filename, CpuFields, CpuClasses,
-			cpuNameReader, cpuTypeReader);
+	return readDataset(filename, WineFields, WineClasses,
+			wineNameReader, wineTypeReader);
 }
 
 Dataset readHeartDiseaseDataset(std::string filename)

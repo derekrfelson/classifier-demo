@@ -18,13 +18,13 @@ int main(int argc, char** argv)
 	auto verbosity = argc - 1;
 
 	std::array<Dataset, 3> datasets {
-			readZooDataset("../data/zoo.csv"),
+			readIrisDataset("../data/iris.csv"),
 			readHeartDiseaseDataset("../data/heartDisease.csv"),
-			readCpuDataset("../data/cpu.csv")
+			readWineDataset("../data/wine.csv")
 	};
 
 	std::array<std::string, 3> datasetLabels = {
-			"Zoo", "Heart Disease", "CPU"
+			"Iris", "Heart Disease", "Wine"
 	};
 
 	std::array<ClassifierType, 3> classifierTypes = {
