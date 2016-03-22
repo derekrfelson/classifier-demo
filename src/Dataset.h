@@ -22,7 +22,7 @@ constexpr auto WineClasses = 3;
 constexpr auto IrisFields = 4;
 constexpr auto IrisClasses = 3;
 constexpr auto HeartDiseaseFields = 13;
-constexpr auto HeartDiseaseClasses = 5;
+constexpr auto HeartDiseaseClasses = 4;
 
 class Dataset
 {
