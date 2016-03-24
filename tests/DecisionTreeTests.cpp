@@ -29,6 +29,16 @@ TEST(DecisionTreeTests, EntropyZeroWithNonExistentClass)
 	EXPECT_EQ(0, entropy(testTypes2, 5));
 }
 
+TEST(DecisionTreeTests, ModerateEntropy)
+{
+	TypeVector testTypes1{14, 1};
+	testTypes1 << 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			      2, 2, 2, 2, 2;
+
+	EXPECT_NEAR(.94028, entropy(testTypes1, 1), .0001);
+	EXPECT_NEAR(.94028, entropy(testTypes1, 2), .0001);
+}
+
 TEST(DecisionTreeTests, MaxEntropy)
 {
 	TypeVector testTypes1{2, 1};
