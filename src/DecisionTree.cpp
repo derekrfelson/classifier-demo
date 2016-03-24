@@ -98,10 +98,32 @@ double gain(const TypeVector& types, const ColVector& dataColumn)
 			}
 		}
 
+		assert(subsetTypes.size() > 0);
+
 		// Add the entropy gained by knowing that column = that value
 		ret -= static_cast<double>(subsetTypes.size())/dataColumn.rows()
 				* entropy(subsetTypes);
 	}
 
+	return ret;
+}
+
+/*
+ * Gives you the 0-based index of the column that maximizes information gain.
+ */
+size_t bestAttribute(const Dataset::TypeVector& types,
+		const Dataset::DataMatrix& data)
+{
+	double maxGain = -999;
+	size_t ret = 999;
+	for (auto i = 0; i < data.cols(); ++i)
+	{
+		auto colGain = gain(types, data.col(i));
+		if (colGain > maxGain)
+		{
+			ret = i;
+			maxGain = colGain;
+		}
+	}
 	return ret;
 }

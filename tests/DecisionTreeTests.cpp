@@ -106,3 +106,36 @@ TEST(GainTests, SomeGain)
 
 	EXPECT_NEAR(.048, gain(testTypes, testData.col(0)), .001);
 }
+
+// Best Attribute tests
+
+TEST(BestAttributeTests, OneColumn)
+{
+	TypeVector testTypes{1, 1};
+	DataMatrix testData{1, 1};
+	testTypes << 1;
+	testData << 1;
+
+	EXPECT_EQ(0, bestAttribute(testTypes, testData));
+}
+
+TEST(BestAttributeTests, TwoColumns)
+{
+	TypeVector testTypes1{3, 1};
+	DataMatrix testData1{3, 2};
+	testTypes1 << 1, 2, 1;
+	testData1 << 5, 10,
+			    6, 10,
+				5, 10;
+
+	EXPECT_EQ(0, bestAttribute(testTypes1, testData1));
+
+	TypeVector testTypes2{3, 1};
+	DataMatrix testData2{3, 2};
+	testTypes2 << 1, 2, 1;
+	testData2 << 10, 5,
+			    10, 6,
+				10, 5;
+
+	EXPECT_EQ(1, bestAttribute(testTypes2, testData2));
+}

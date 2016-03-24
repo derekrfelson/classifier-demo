@@ -11,13 +11,11 @@
 #include "Dataset.h"
 #include <cstdint>
 
-class DecisionTree
-{
-};
-
 double entropy(const Dataset::TypeVector& types);
 double entropy(const std::vector<uint8_t>& types);
 double gain(const Dataset::TypeVector& types,
 		const Dataset::ColVector& dataColumn);
+size_t bestAttribute(const Dataset::TypeVector& types,
+		const Dataset::DataMatrix& data);
 
 #endif /* DECISIONTREE_H_ */
