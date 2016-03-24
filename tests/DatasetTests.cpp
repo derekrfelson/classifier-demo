@@ -6,13 +6,13 @@
 
 using Decimal = Dataset::Decimal;
 
-TEST(ZooDatasetTests, SizeOfDatafile)
+TEST(DatasetTests, SizeOfDatafile)
 {
 	auto data = readWineDataset("../data/wine.csv");
 	EXPECT_EQ(178, data.size());
 }
 
-TEST(ZooDatasetTests, PartitionLeavingOneOut)
+TEST(DatasetTests, PartitionLeavingOneOut)
 {
 	auto data = readWineDataset("../data/wine.csv");
 
@@ -23,16 +23,16 @@ TEST(ZooDatasetTests, PartitionLeavingOneOut)
 		EXPECT_EQ(1, partition.testing.size());
 	}
 
-	auto partition = data.partition(178, 178);
+	auto partition = data.partition(177, 177);
 	EXPECT_EQ(177, partition.training.size());
 	EXPECT_EQ(1, partition.testing.size());
 }
 
-TEST(ZooDatasetTests, PartitionForKFold)
+TEST(DatasetTests, PartitionForKFold)
 {
 	auto data = readWineDataset("../data/wine.csv");
 
-	for (auto i = 1; i < 4; ++i)
+	for (auto i = 1; i < 3; ++i)
 	{
 		auto indices = kFoldIndices(i, 4, data.size());
 		auto partition = data.partition(indices.first, indices.second);
@@ -40,7 +40,7 @@ TEST(ZooDatasetTests, PartitionForKFold)
 		EXPECT_EQ(44, partition.testing.size());
 	}
 
-	auto indices = kFoldIndices(5, 5, data.size());
+	auto indices = kFoldIndices(4, 4, data.size());
 	auto partition = data.partition(indices.first, indices.second);
 	EXPECT_EQ(178-46, partition.training.size());
 	EXPECT_EQ(46, partition.testing.size());
