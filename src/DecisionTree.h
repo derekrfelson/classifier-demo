@@ -9,12 +9,13 @@
 #define DECISIONTREE_H_
 
 #include "Dataset.h"
+#include <cstdint>
 
 class DecisionTree
 {
 };
 
-double entropy(const Dataset::DataMatrix& data, const Dataset::TypeVector& types);
+double entropy(const Dataset::TypeVector& types, uint8_t positiveType);
 
 
 #endif /* DECISIONTREE_H_ */
