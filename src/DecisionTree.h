@@ -15,6 +15,7 @@ class DecisionTree
 {
 };
 
+double entropy(const Dataset::TypeVector& types);
 double entropy(const Dataset::TypeVector& types, uint8_t positiveType);
 
 
