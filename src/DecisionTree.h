@@ -16,6 +16,8 @@ class DecisionTree
 };
 
 double entropy(const Dataset::TypeVector& types);
-
+double entropy(const std::vector<uint8_t>& types);
+double gain(const Dataset::TypeVector& types,
+		const Dataset::ColVector& dataColumn);
 
 #endif /* DECISIONTREE_H_ */

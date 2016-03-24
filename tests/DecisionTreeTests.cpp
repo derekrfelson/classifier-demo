@@ -5,7 +5,9 @@
 using DataMatrix = Dataset::DataMatrix;
 using TypeVector = Dataset::TypeVector;
 
-TEST(DecisionTreeTests, EntropyZeroWithOnlyOneClass)
+// Entropy tests
+
+TEST(EntropyTests, EntropyZeroWithOnlyOneClass)
 {
 	TypeVector testTypes1{1, 1};
 	testTypes1 << 1;
@@ -17,7 +19,7 @@ TEST(DecisionTreeTests, EntropyZeroWithOnlyOneClass)
 	EXPECT_EQ(0, entropy(testTypes2));
 }
 
-TEST(DecisionTreeTests, ModerateEntropyTwoClasses)
+TEST(EntropyTests, ModerateEntropyTwoClasses)
 {
 	TypeVector testTypes1{14, 1};
 	testTypes1 << 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -26,7 +28,7 @@ TEST(DecisionTreeTests, ModerateEntropyTwoClasses)
 	EXPECT_NEAR(.94028, entropy(testTypes1), .0001);
 }
 
-TEST(DecisionTreeTests, MaxEntropyTwoClasses)
+TEST(EntropyTests, MaxEntropyTwoClasses)
 {
 	TypeVector testTypes1{2, 1};
 	testTypes1 << 1, 2;
@@ -38,7 +40,7 @@ TEST(DecisionTreeTests, MaxEntropyTwoClasses)
 	EXPECT_EQ(1, entropy(testTypes2));
 }
 
-TEST(DecisionTreeTests, MaxEntropyMultiClass)
+TEST(EntropyTests, MaxEntropyMultiClass)
 {
 	TypeVector testTypes1{4, 1};
 	testTypes1 << 1, 2, 3, 4;
@@ -46,7 +48,7 @@ TEST(DecisionTreeTests, MaxEntropyMultiClass)
 	EXPECT_EQ(2, entropy(testTypes1));
 }
 
-TEST(DecisionTreeTests, MinEntropyMultiClass)
+TEST(EntropyTests, MinEntropyMultiClass)
 {
 	TypeVector testTypes1{4, 1};
 	testTypes1 << 1, 1, 1, 1;
@@ -54,7 +56,7 @@ TEST(DecisionTreeTests, MinEntropyMultiClass)
 	EXPECT_EQ(0, entropy(testTypes1));
 }
 
-TEST(DecisionTreeTests, ModerateEntropyMultiClass)
+TEST(EntropyTests, ModerateEntropyMultiClass)
 {
 	TypeVector testTypes1{14, 1};
 	testTypes1 << 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -63,3 +65,44 @@ TEST(DecisionTreeTests, ModerateEntropyMultiClass)
 	EXPECT_NEAR(.94028, entropy(testTypes1), .0001);
 }
 
+// Information gain tests
+
+TEST(GainTests, PerfectGain)
+{
+	TypeVector testTypes{4, 1};
+	DataMatrix testData{4, 2};
+	testTypes << 1, 1, 2, 2;
+	testData << 10, 1,
+			    10, 1,
+				0, 1,
+				0, 1;
+
+	EXPECT_EQ(1, gain(testTypes, testData.col(0)));
+}
+
+TEST(GainTests, NoGain)
+{
+	TypeVector testTypes{4, 1};
+	DataMatrix testData{4, 2};
+	testTypes << 1, 1, 2, 2;
+	testData << 10, 1,
+			    10, 1,
+				0, 1,
+				0, 1;
+
+	EXPECT_EQ(0, gain(testTypes, testData.col(1)));
+}
+
+TEST(GainTests, SomeGain)
+{
+	TypeVector testTypes{14, 1};
+	DataMatrix testData{14, 1};
+	testTypes << 1, 1, 2, 2, 2,
+			     1, 2, 1, 2, 2,
+				 2, 2, 2, 1;
+	testData << 0, 1, 0, 0, 0,
+			    1, 1, 0, 0, 0,
+				1, 1, 0, 1;
+
+	EXPECT_NEAR(.048, gain(testTypes, testData.col(0)), .001);
+}

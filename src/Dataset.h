@@ -34,7 +34,8 @@ public:
 	using RowVector = Eigen::Matrix<Decimal, 1, Eigen::Dynamic>;
 	using CovarianceMatrix =
 			Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic>;
-	using TypeVector = Eigen::Matrix<Decimal, Eigen::Dynamic, 1>;
+	using TypeVector = Eigen::Matrix<uint8_t, Eigen::Dynamic, 1>;
+	using ColVector = Eigen::Matrix<Decimal, Eigen::Dynamic, 1>;
 	using DataMatrix = Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic>;
 
 public:
