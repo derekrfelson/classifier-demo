@@ -12,11 +12,14 @@
 #include <algorithm>
 #include <cassert>
 #include <ostream>
+#include <iostream>
 #include <sstream>
 
 constexpr uint8_t NoType = 255;
 
-static std::vector<uint8_t> getUniqueValues(const ColVector& col);
+static std::vector<uint8_t> colToStdVector(const ColVector& col);
+static std::vector<uint8_t> rowToStdVector(const RowVector& row);
+static std::vector<uint8_t> getUniqueValues(std::vector<uint8_t> vec);
 
 DecisionTree::DecisionTree(const TypeVector& types, const DataMatrix& data)
 {
@@ -29,7 +32,7 @@ DecisionTree::DecisionTree(const TypeVector& types, const DataMatrix& data)
  */
 DecisionTree::Node::Node(size_t attributeIndex, const TypeVector& types,
 		const DataMatrix& data)
-: Node(attributeIndex, NoType, nullptr, types, data)
+: Node(attributeIndex, NoType, nullptr, types, data, 0)
 {
 }
 
@@ -43,13 +46,20 @@ DecisionTree::Node::Node(size_t attributeIndex, const TypeVector& types,
  * parentAttrValue: Value matched for the parent's distinguishing attribute
  */
 DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
-		const Node* parent, const TypeVector& types, const DataMatrix& data)
+		const Node* parent, const TypeVector& types, const DataMatrix& data,
+		 size_t attributesChecked)
 : attributeIndex{attributeIndex},
   parentAttrValue{parentAttrValue},
   children{},
   parent{parent},
   type{NoType}
 {
+	std::cout << "Node constructor for attribute " << attributeIndex << std::endl;
+	std::cout << data;
+	std::cout << std::endl;
+	std::cout << types.cast<int>();
+	std::cout << std::endl << std::endl;
+
 	std::unique_ptr<DataMatrix> subsetData;
 	std::unique_ptr<TypeVector> subsetTypes;
 
@@ -86,18 +96,53 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
 	}
 	else
 	{
+		// This must be a root node, so the data is whatever was passed in
 		subsetData = std::make_unique<DataMatrix>(data);
 		subsetTypes = std::make_unique<TypeVector>(types);
 	}
 
-	// Construct child decision nodes unless we already have only one class
-	if (entropy(*subsetTypes) != 0)
+	// Turn this node into a correct leaf node, or make its children
+	if (entropy(*subsetTypes) == 0)
 	{
+		// Case 1: The subset consists of only 1 type. Perfect!
+
+		// In an ideal leaf node every data point is of the same type,
+		// which is the type returned by the classifier.
+		type = subsetTypes->operator()(0, 0);
+	}
+	else if (attributesChecked < data.cols())
+	{
+		// Case 2: We've checked all the attributes
+		// and we still can't build a perfect classifier
+
+		// Return the most likely type
+		auto uniqueTypes
+			= getUniqueValues(colToStdVector(subsetTypes->cast<Decimal>()));
+		std::vector<size_t> counts(uniqueTypes.size(), 0);
+		for (auto i = 0; i < uniqueTypes.size(); ++i)
+		{
+			for (auto j = 0; j < subsetTypes->size(); ++j)
+			{
+				if ((*subsetTypes)[j] == uniqueTypes[i])
+				{
+					++counts[i];
+				}
+			}
+		}
+		type = uniqueTypes[*std::max_element(cbegin(counts), cend(counts))];
+	}
+	else
+	{
+		// Case 3: We can improve by checking more attributes
+
+		// Construct child decision nodes unless we already have only one class
+
 		// Find the most informative attribute to base the children on
 		auto childAttribute = bestAttribute(*subsetTypes, *subsetData);
 
 		// We'll need a new child for every unique value in the column
-		auto uniqueValues = getUniqueValues(subsetData->col(attributeIndex));
+		auto uniqueValues = getUniqueValues(
+				colToStdVector(subsetData->col(attributeIndex)));
 
 		// Make the children
 		for (auto val : uniqueValues)
@@ -106,14 +151,8 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
 			// The child will then further discriminate based on
 			// $childAttribute.
 			children.emplace_front(childAttribute, val, this,
-					*subsetTypes, *subsetData);
+					*subsetTypes, *subsetData, attributesChecked + 1);
 		}
-	}
-	else
-	{
-		// In a leaf node every data point is of the same type,
-		// which is the type returned by the classifier.
-		type = subsetTypes->operator()(0, 0);
 	}
 }
 
@@ -247,7 +286,7 @@ double gain(const TypeVector& types, const ColVector& dataColumn)
 	assert(types.rows() == dataColumn.rows());
 
 	// Find all the unique values in the column
-	auto uniqueValues = getUniqueValues(dataColumn);
+	auto uniqueValues = getUniqueValues(colToStdVector(dataColumn));
 
 	// Gain is entropy(types) - something per each unique value
 	double ret = entropy(types);
@@ -293,18 +332,26 @@ size_t bestAttribute(const TypeVector& types, const DataMatrix& data)
 	return ret;
 }
 
+std::vector<uint8_t> colToStdVector(const ColVector& col)
+{
+	return std::vector<uint8_t>(col.data(), col.data() + col.rows());
+}
+
+std::vector<uint8_t> rowToStdVector(const RowVector& row)
+{
+	return std::vector<uint8_t>(row.data(), row.data() + row.cols());
+}
+
 /**
- * Utility function to get the unique values from a column vector.
+ * Utility function to get the unique values from a vector.
  *
  * Unlike std::unique, data does not have to be in sorted order.
  */
-std::vector<uint8_t> getUniqueValues(const ColVector& col)
+std::vector<uint8_t> getUniqueValues(std::vector<uint8_t> vec)
 {
-	std::vector<uint8_t> uniqueValues(col.data(), col.data() + col.rows());
-	std::sort(begin(uniqueValues), end(uniqueValues));
-	uniqueValues.erase(std::unique(begin(uniqueValues), end(uniqueValues)),
-			end(uniqueValues));
-	return uniqueValues;
+	std::sort(begin(vec), end(vec));
+	vec.erase(std::unique(begin(vec), end(vec)), end(vec));
+	return vec;
 }
 
 

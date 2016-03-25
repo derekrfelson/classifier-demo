@@ -19,7 +19,7 @@ public:
 		const std::vector<CovarianceMatrix>& cmInverses,
 		const std::vector<Decimal>& cmDeterminants,
 		const std::vector<RowVector>& meanVectors);
-	virtual uint8_t classify(const RowVector& point) const override;
+	uint8_t classify(const RowVector& point) const override;
 
 private:
 	std::vector<CovarianceMatrix> cmInverses;

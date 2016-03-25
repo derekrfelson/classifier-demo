@@ -188,3 +188,57 @@ TEST(DecisionTreeTests, TwoClasses)
 	EXPECT_EQ(2, dt.classify(testData.row(3)));
 	EXPECT_EQ(2, dt.classify(testData.row(4)));
 }
+
+TEST(DecisionTreeTests, HeartDiseaseData)
+{
+	TypeVector types{9,1};
+	DataMatrix data{9, 13};
+	types << 1,1,1,2,2,2,3,3,3;
+	data << 3,1,1,2,1,1,2,3,0,2,3,0,6,
+			1,1,3,2,2,0,0,4,0,3,3,0,3,
+			2,0,2,2,1,0,2,4,0,1,1,0,3,
+			4,1,4,1,1,0,2,2,1,2,2,2,7,
+			3,1,4,2,1,1,2,3,1,3,3,0,7,
+			2,1,2,1,1,0,0,3,0,1,3,0,7,
+			4,1,4,3,2,0,2,2,1,1,2,3,3,
+			3,1,4,2,2,0,2,3,0,1,2,1,7,
+			3,1,3,2,2,1,2,3,1,1,2,1,6;
+
+	DecisionTree dt{types, data};
+	EXPECT_EQ(1, dt.classify(data.row(0)));
+	EXPECT_EQ(1, dt.classify(data.row(1)));
+	EXPECT_EQ(1, dt.classify(data.row(2)));
+	EXPECT_EQ(2, dt.classify(data.row(3)));
+	EXPECT_EQ(2, dt.classify(data.row(4)));
+	EXPECT_EQ(2, dt.classify(data.row(5)));
+	EXPECT_EQ(3, dt.classify(data.row(6)));
+	EXPECT_EQ(3, dt.classify(data.row(7)));
+	EXPECT_EQ(3, dt.classify(data.row(8)));
+}
+
+TEST(DecisionTreeTests, IrisData)
+{
+	TypeVector types{12,1};
+	DataMatrix data{12, 4};
+	types << 1,1,1,1,2,2,2,2,3,3,3,3;
+	data << 1,3,1,1,
+			1,2,1,1,
+			1,2,1,1,
+			1,2,1,1,
+			4,2,3,3,
+			3,2,3,3,
+			3,2,3,3,
+			2,1,3,3,
+			3,3,4,4,
+			2,2,3,4,
+			4,2,4,4,
+			3,2,4,3;
+
+	DecisionTree dt{types, data};
+	for (auto i = 0; i < types.rows(); ++i)
+	{
+		EXPECT_EQ(types[i], dt.classify(data.row(i)));
+	}
+}
+
+

@@ -8,19 +8,19 @@
 #ifndef DECISIONTREE_H_
 #define DECISIONTREE_H_
 
-#include "Dataset.h"
+#include "Classifier.h"
 #include <cstdint>
 #include <list>
 #include <memory>
 #include <iosfwd>
 #include <string>
 
-class DecisionTree
+class DecisionTree : public Classifier
 {
 public:
 	explicit DecisionTree(const TypeVector& types,
 			const DataMatrix& data);
-	uint8_t classify(const RowVector& dataPoint) const;
+	uint8_t classify(const RowVector& dataPoint) const override;
 	std::ostream& print(std::ostream& out) const;
 
 private:
@@ -31,7 +31,7 @@ private:
 				const DataMatrix& data);
 		explicit Node(size_t attributeIndex, uint8_t parentType,
 				const Node* parent, const TypeVector& types,
-				const DataMatrix& data);
+				const DataMatrix& data, size_t attributesChecked);
 		std::ostream& print(std::ostream& out) const;
 		std::string name() const;
 

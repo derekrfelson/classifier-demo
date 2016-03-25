@@ -22,36 +22,50 @@ int main(int argc, char** argv)
 			readWineDataset("../data/wine.csv")
 	};
 
+	std::array<Dataset, 3> discreteDatasets {
+		readIrisDataset("../data/irisDiscrete.csv"),
+		readHeartDiseaseDataset("../data/heartDiseaseDiscrete.csv"),
+		readWineDataset("../data/wineDiscrete.csv")
+	};
+
 	datasets[0].shuffle();
 	datasets[1].shuffle();
 	datasets[2].shuffle();
+	discreteDatasets[0].shuffle();
+	discreteDatasets[1].shuffle();
+	discreteDatasets[2].shuffle();
 
 	std::array<std::string, 3> datasetLabels = {
 			"Iris", "Heart Disease", "Wine"
 	};
 
-	std::array<ClassifierType, 3> classifierTypes = {
+	std::array<ClassifierType, 4> classifierTypes = {
 			ClassifierType::OPTIMAL,
 			ClassifierType::NAIVE,
-			ClassifierType::LINEAR
+			ClassifierType::LINEAR,
+			ClassifierType::DECISION_TREE
 	};
 
-	std::array<std::string, 3> classifierTypeLabels = {
-			"Optimal",
-			"Naive",
-			"Linear"
+	std::array<std::string, 4> classifierTypeLabels = {
+			"Optimal Bayes",
+			"Naive Bayes",
+			"Linear Bayes",
+			"Decision Tree"
 	};
 
 	for (auto datasetNum = 0; datasetNum < 3; ++datasetNum)
 	{
-		for (auto classifierNum = 0; classifierNum < 3; ++classifierNum)
+		for (auto classifierNum = 0; classifierNum < 4; ++classifierNum)
 		{
+			auto& data = classifierNum < 3
+					? datasets[datasetNum] : discreteDatasets[datasetNum];
+
 			std::cout << datasetLabels[datasetNum]
 					  << " data using 10-fold cross-validation "
 					  << "(" << classifierTypeLabels[classifierNum]
-					  << " Bayes classifier)"
+					  << " classifier)"
 					  << std::endl << std::endl;
-			classifyAndTest(datasets[datasetNum],
+			classifyAndTest(data,
 					10,
 					classifierTypes[classifierNum],
 					verbosity);
@@ -59,9 +73,9 @@ int main(int argc, char** argv)
 			std::cout << datasetLabels[datasetNum]
 					  << " data using leave-one-out cross-validation "
 					  << "(" << classifierTypeLabels[classifierNum]
-					  << " Bayes classifier)"
+					  << " classifier)"
 					  << std::endl << std::endl;
-			classifyAndTest(datasets[datasetNum],
+			classifyAndTest(data,
 					datasets[datasetNum].size(),
 					classifierTypes[classifierNum],
 					verbosity);
@@ -95,7 +109,7 @@ void classifyAndTest(const Dataset& data,
 		for (auto i = 0; i < partitions.testing.size(); ++i)
 		{
 			// Classify
-			auto type = c.classify(partitions.testing.getPoint(i));
+			auto type = c->classify(partitions.testing.getPoint(i));
 
 			if (verbosity > 1)
 			{

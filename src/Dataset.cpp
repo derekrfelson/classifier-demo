@@ -15,6 +15,7 @@
 #include "Dataset.h"
 #include "Types.h"
 #include "BayesClassifier.h"
+#include "DecisionTree.h"
 
 Dataset::Dataset(std::vector<std::string> names, TypeVector types,
 		DataMatrix data, size_t numClasses)
@@ -132,8 +133,13 @@ Dataset Dataset::getSubsetByClass(uint8_t type) const
 		std::move(subsetData), NumClasses};
 }
 
-BayesClassifier Dataset::classifier(ClassifierType type) const
+std::shared_ptr<Classifier> Dataset::classifier(ClassifierType type) const
 {
+	if (type == ClassifierType::DECISION_TREE)
+	{
+		return std::make_shared<DecisionTree>(types, data);
+	}
+
 	std::vector<CovarianceMatrix> cmInverses;
 	std::vector<Decimal> cmDeterminants;
 	std::vector<RowVector> meanVectors;
@@ -151,7 +157,8 @@ BayesClassifier Dataset::classifier(ClassifierType type) const
 		meanVectors.push_back(trainingClass.getMeans());
 	}
 
-	return BayesClassifier{cmInverses, cmDeterminants, meanVectors};
+	return std::make_shared<BayesClassifier>(
+			cmInverses, cmDeterminants, meanVectors);
 }
 
 CovarianceMatrix Dataset::getCovarianceMatrix(ClassifierType type) const
