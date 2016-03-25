@@ -19,6 +19,7 @@ static Dataset readDataset(std::string filename,
 
 	// Figure out the size of the matrix and vectors we'll need
 	auto file = std::ifstream{filename};
+	assert(file.is_open());
 	auto numLines = 0;
 	while(std::getline(file, line))
 	{
