@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <cassert>
 #include <ostream>
-#include <iostream>
 #include <sstream>
 
 constexpr uint8_t NoType = 255;
@@ -54,12 +53,6 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
   parent{parent},
   type{NoType}
 {
-	std::cout << "Node constructor for attribute " << attributeIndex << std::endl;
-	std::cout << data;
-	std::cout << std::endl;
-	std::cout << types.cast<int>();
-	std::cout << std::endl << std::endl;
-
 	std::unique_ptr<DataMatrix> subsetData;
 	std::unique_ptr<TypeVector> subsetTypes;
 
@@ -110,7 +103,7 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
 		// which is the type returned by the classifier.
 		type = subsetTypes->operator()(0, 0);
 	}
-	else if (attributesChecked < data.cols())
+	else if (attributesChecked >= data.cols())
 	{
 		// Case 2: We've checked all the attributes
 		// and we still can't build a perfect classifier
