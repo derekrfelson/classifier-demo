@@ -8,31 +8,14 @@
 #ifndef CLASSIFIER_H_
 #define CLASSIFIER_H_
 
-#include <vector>
+#include "Types.h"
 #include <cstdint>
-#include <eigen3/Eigen/Dense>
-#include "Dataset.h"
 
-enum class ClassifierType : uint8_t
-{
-	OPTIMAL,
-	NAIVE,
-	LINEAR
-};
-
-struct Classifier
+class Classifier
 {
 public:
-	explicit Classifier(
-			const std::vector<Dataset::CovarianceMatrix>& cmInverses,
-			const std::vector<Dataset::Decimal>& cmDeterminants,
-			const std::vector<Dataset::RowVector>& meanVectors);
-	uint8_t classify(Dataset::RowVector point) const;
-
-private:
-	std::vector<Dataset::CovarianceMatrix> cmInverses;
-	std::vector<Dataset::Decimal> cmDeterminants;
-	std::vector<Dataset::RowVector> meanVectors;
+	virtual uint8_t classify(const RowVector& point) const = 0;
+	virtual ~Classifier() = default;
 };
 
 #endif /* CLASSIFIER_H_ */

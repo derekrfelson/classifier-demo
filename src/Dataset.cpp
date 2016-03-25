@@ -7,21 +7,14 @@
 
 #include <random>
 #include <chrono>
-#include <fstream>
 #include <vector>
-#include <memory>
 #include <string>
 #include <algorithm>
-#include <iostream>
 #include <eigen3/Eigen/SVD>
+#include <eigen3/Eigen/Dense>
 #include "Dataset.h"
-#include "Classifier.h"
-
-using Decimal = Dataset::Decimal;
-using DataMatrix = Dataset::DataMatrix;
-using RowVector = Dataset::RowVector;
-using TypeVector = Dataset::TypeVector;
-using CovarianceMatrix = Dataset::CovarianceMatrix;
+#include "Types.h"
+#include "BayesClassifier.h"
 
 Dataset::Dataset(std::vector<std::string> names, TypeVector types,
 		DataMatrix data, size_t numClasses)
@@ -113,12 +106,7 @@ Dataset Dataset::getSubsetByClass(uint8_t type) const
 	}
 
 	// End the program if we have a size-0 subclass
-	if (subsetSize == 0)
-	{
-		std::cerr << "Problem found: Dataset subclass of type "
-				<< static_cast<int>(type) << " has size 0" << std::endl;
-		std::abort();
-	}
+	assert(subsetSize != 0);
 
 	// Initialize our vectors to the right size
 	// Subset types will all be the same
@@ -144,7 +132,7 @@ Dataset Dataset::getSubsetByClass(uint8_t type) const
 		std::move(subsetData), NumClasses};
 }
 
-Classifier Dataset::classifier(ClassifierType type) const
+BayesClassifier Dataset::classifier(ClassifierType type) const
 {
 	std::vector<CovarianceMatrix> cmInverses;
 	std::vector<Decimal> cmDeterminants;
@@ -163,7 +151,7 @@ Classifier Dataset::classifier(ClassifierType type) const
 		meanVectors.push_back(trainingClass.getMeans());
 	}
 
-	return Classifier{cmInverses, cmDeterminants, meanVectors};
+	return BayesClassifier{cmInverses, cmDeterminants, meanVectors};
 }
 
 CovarianceMatrix Dataset::getCovarianceMatrix(ClassifierType type) const
@@ -189,6 +177,8 @@ CovarianceMatrix Dataset::getCovarianceMatrix(ClassifierType type) const
 	}
 	else
 	{
+		assert(type == ClassifierType::NAIVE);
+
 		// Naive Bayes classifier assumes all dimensions independent,
 		// so we set all the non-diagonal entries in the covariance
 		// matrix to zero.
@@ -206,7 +196,7 @@ size_t Dataset::size() const
 	return names.size();
 }
 
-Dataset::RowVector Dataset::getPoint(size_t i) const
+RowVector Dataset::getPoint(size_t i) const
 {
 	assert(i < data.rows());
 	return data.row(i);
@@ -266,8 +256,6 @@ CovarianceMatrix getPseudoInverse(const CovarianceMatrix& matrix)
 		return matrix.inverse();
 	}
 
-	std::cout << "Using pseudoinverse!" << std::endl;
-
 	auto svd = matrix.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
 
 	auto pinvS = svd.singularValues();
@@ -286,7 +274,7 @@ CovarianceMatrix getPseudoInverse(const CovarianceMatrix& matrix)
 		}
 	}
 
-	auto pinvM = static_cast<Dataset::CovarianceMatrix>(
+	auto pinvM = static_cast<CovarianceMatrix>(
 			svd.matrixV() * pinvS.asDiagonal() * svd.matrixU().transpose());
 
 	for (auto i = 0; i < pinvM.rows(); ++i)
@@ -304,8 +292,7 @@ CovarianceMatrix getPseudoInverse(const CovarianceMatrix& matrix)
 	return pinvM;
 }
 
-Decimal getPseudoDeterminant(
-		const Dataset::CovarianceMatrix& matrix)
+Decimal getPseudoDeterminant(const CovarianceMatrix& matrix)
 {
 	if (matrix.determinant() != 0)
 	{
@@ -324,133 +311,4 @@ Decimal getPseudoDeterminant(
 	}
 
 	return product;
-}
-
-Dataset readDataset(std::string filename,
-		size_t numFields,
-		size_t numClasses,
-		std::function<std::string(std::stringstream&)> nameReader,
-		std::function<uint8_t(std::stringstream&)> typeReader)
-{
-	auto line = std::string{};
-
-	// Figure out the size of the matrix and vectors we'll need
-	auto file = std::ifstream{filename};
-	auto numLines = 0;
-	while(std::getline(file, line))
-	{
-		++numLines;
-	}
-
-	// Return to the start of the file
-	file.clear();
-	file.seekg(0, std::ios::beg);
-
-	// Initialize our vectors to the right size
-	Dataset::TypeVector types(numLines, 1);
-	Dataset::DataMatrix data(numLines, numFields);
-	std::vector<std::string> names{};
-	names.reserve(numLines);
-
-	for (auto i = 0; i < numLines; ++i)
-	{
-		// Read the line
-		std::getline(file, line);
-
-		// Local variables
-		auto ssLine = std::stringstream{line};
-		auto field = std::string{};
-
-		// Read the name
-		names.push_back(nameReader(ssLine));
-
-		// Read the data fields
-		for (auto j = 0; j < numFields; ++j)
-		{
-			assert(std::getline(ssLine, field, ','));
-			data(i, j) = std::stod(field);
-		}
-
-		// Read the class/type
-		types[i] = typeReader(ssLine);
-
-		// Must be at end of string now
-		assert(!std::getline(ssLine, field, ','));
-	}
-
-	// Sanity check
-	assert(names.size() == data.rows() && data.rows() == types.rows());
-
-	// We must be at the end of the file now
-	assert(!std::getline(file, line));
-
-	return Dataset{names, types, data, numClasses};
-}
-
-// Iris data format has no name field
-auto irisNameReader = [](std::stringstream& ssLine) {
-	return "iris";
-};
-
-// Wine has no name
-auto wineNameReader = [](std::stringstream& ssLine) {
-	return "wine";
-};
-
-// Heart Disease data format has no name
-auto heartDiseaseNameReader = [](std::stringstream& ssLine) {
-	return "heartdisease";
-};
-
-// Iris stores type as one of 3 possible strings
-auto irisTypeReader = [](std::stringstream& ssLine) {
-	std::string field;
-	std::getline(ssLine, field, ',');
-	uint8_t ret = 0;
-
-	if (field.compare(0, 11, "Iris-setosa") == 0)
-	{
-		ret = 1;
-	}
-	else if (field.compare(0, 15, "Iris-versicolor") == 0)
-	{
-		ret = 2;
-	}
-	else
-	{
-		ret = 3;
-	}
-	return ret;
-};
-
-// Heart Disease data format stores type-1 instead of type
-auto heartDiseaseTypeReader = [](std::stringstream& ssLine) {
-	std::string field;
-	std::getline(ssLine, field, ',');
-	return std::stoi(field) + 1;
-};
-
-// Wine data format stores type as an integer
-auto wineTypeReader = [](std::stringstream& ssLine) {
-	std::string field;
-	std::getline(ssLine, field, ',');
-	return std::stoi(field);
-};
-
-Dataset readIrisDataset(std::string filename)
-{
-	return readDataset(filename, IrisFields, IrisClasses,
-			irisNameReader, irisTypeReader);
-}
-
-Dataset readWineDataset(std::string filename)
-{
-	return readDataset(filename, WineFields, WineClasses,
-			wineNameReader, wineTypeReader);
-}
-
-Dataset readHeartDiseaseDataset(std::string filename)
-{
-	return readDataset(filename, HeartDiseaseFields, HeartDiseaseClasses,
-			heartDiseaseNameReader, heartDiseaseTypeReader);
 }

@@ -5,8 +5,8 @@
  *      Author: derek
  */
 
-#include <cassert>
 #include "Partition.h"
+#include <cassert>
 
 /**
  * Computes start and end indices for slicing a dataset up for k-fold

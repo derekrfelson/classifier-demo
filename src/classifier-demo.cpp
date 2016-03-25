@@ -1,12 +1,11 @@
 #include <iostream>
 #include <string>
 #include <array>
-#include "Classifier.h"
+#include "BayesClassifier.h"
 #include "Partition.h"
 #include "Dataset.h"
-
-using CovarianceMatrix = Dataset::CovarianceMatrix;
-using MeanRowVector = Dataset::RowVector;
+#include "Types.h"
+#include "CsvReader.h"
 
 void classifyAndTest(const Dataset& data,
 		unsigned int numFolds,

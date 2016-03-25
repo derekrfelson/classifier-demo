@@ -2,9 +2,8 @@
 #include "../src/Dataset.h"
 #include "../src/Partition.h"
 #include "../src/Classifier.h"
+#include "../src/CsvReader.h"
 #include <iostream>
-
-using Decimal = Dataset::Decimal;
 
 TEST(DatasetTests, SizeOfDatafile)
 {

@@ -7,7 +7,7 @@ find_package(Threads)
 include_directories(src)
 file(GLOB TESTS "tests/*.cpp")
 link_directories(/usr/local/lib)
-set(SOURCES src/Classifier.cpp src/Dataset.cpp src/Partition.cpp src/DecisionTree.cpp)
+set(SOURCES src/Classifier.cpp src/BayesClassifier.cpp src/Dataset.cpp src/Partition.cpp src/DecisionTree.cpp src/CsvReader.cpp)
 set(MAINSOURCE src/classifier-demo.cpp)
 
 add_executable(classifier ${SOURCES} ${MAINSOURCE})

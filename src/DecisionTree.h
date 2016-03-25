@@ -12,23 +12,28 @@
 #include <cstdint>
 #include <list>
 #include <memory>
+#include <iosfwd>
+#include <string>
 
 class DecisionTree
 {
 public:
-	explicit DecisionTree(const Dataset::TypeVector& types,
-			const Dataset::DataMatrix& data);
-	uint8_t classify(const Dataset::RowVector& dataPoint) const;
+	explicit DecisionTree(const TypeVector& types,
+			const DataMatrix& data);
+	uint8_t classify(const RowVector& dataPoint) const;
+	std::ostream& print(std::ostream& out) const;
 
 private:
 	struct Node
 	{
 	public:
-		explicit Node(size_t attributeIndex, const Dataset::TypeVector& types,
-				const Dataset::DataMatrix& data);
+		explicit Node(size_t attributeIndex, const TypeVector& types,
+				const DataMatrix& data);
 		explicit Node(size_t attributeIndex, uint8_t parentType,
-				const Node* parent, const Dataset::TypeVector& types,
-				const Dataset::DataMatrix& data);
+				const Node* parent, const TypeVector& types,
+				const DataMatrix& data);
+		std::ostream& print(std::ostream& out) const;
+		std::string name() const;
 
 		size_t attributeIndex;
 		uint8_t parentAttrValue;
@@ -41,11 +46,12 @@ private:
 	std::unique_ptr<Node> root;
 };
 
-double entropy(const Dataset::TypeVector& types);
+double entropy(const TypeVector& types);
 double entropy(const std::vector<uint8_t>& types);
-double gain(const Dataset::TypeVector& types,
-		const Dataset::ColVector& dataColumn);
-size_t bestAttribute(const Dataset::TypeVector& types,
-		const Dataset::DataMatrix& data);
+double gain(const TypeVector& types,
+		const ColVector& dataColumn);
+size_t bestAttribute(const TypeVector& types,
+		const DataMatrix& data);
+std::ostream& operator<<(std::ostream& out, const DecisionTree& dt);
 
 #endif /* DECISIONTREE_H_ */

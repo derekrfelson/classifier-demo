@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
 #include "../src/DecisionTree.h"
 #include "../src/Dataset.h"
-
-using DataMatrix = Dataset::DataMatrix;
-using TypeVector = Dataset::TypeVector;
+#include "../src/Types.h"
 
 // Entropy tests
 

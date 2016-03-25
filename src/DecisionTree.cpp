@@ -6,17 +6,13 @@
  */
 
 #include "DecisionTree.h"
-#include "Dataset.h"
-#include <iostream>
+#include "Types.h"
 #include <cmath>
 #include <vector>
 #include <algorithm>
-#include <iterator>
 #include <cassert>
-
-using DataMatrix = Dataset::DataMatrix;
-using TypeVector = Dataset::TypeVector;
-using ColVector = Dataset::ColVector;
+#include <ostream>
+#include <sstream>
 
 constexpr uint8_t NoType = 255;
 
@@ -124,7 +120,7 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
 /**
  * Tells you what class a data point belongs to.
  */
-uint8_t DecisionTree::classify(const Dataset::RowVector& dataPoint) const
+uint8_t DecisionTree::classify(const RowVector& dataPoint) const
 {
 	const auto *node = root.get();
 	while (node != nullptr)
@@ -149,6 +145,47 @@ uint8_t DecisionTree::classify(const Dataset::RowVector& dataPoint) const
 	// Failed to find a type
 	assert(false);
 	return NoType;
+}
+
+std::string DecisionTree::Node::name() const
+{
+	if (children.size() == 0)
+	{
+		std::stringstream s;
+		s << "\"Type " << static_cast<int>(type) << "\"";
+		return s.str();
+	}
+	else
+	{
+		std::stringstream s;
+		s << "\"Attr " << attributeIndex << "\"";
+		return s.str();
+	}
+}
+
+std::ostream& DecisionTree::Node::print(std::ostream& out) const
+{
+	if (children.size() == 0)
+	{
+		out << name() << std::endl;
+	}
+	else
+	{
+		for (const auto& child : children)
+		{
+			out << name() << " -> " << child.name()
+			    << " [label=\" =" << static_cast<int>(child.parentAttrValue)
+				<< "\"" << std::endl;
+		}
+	}
+}
+
+std::ostream& DecisionTree::print(std::ostream& out) const
+{
+	out << "Digraph BST {" << std::endl
+	    << "    node [fontname=\"Arial\"];" << std::endl;
+	root->print(out);
+	out << "}" << std::endl;
 }
 
 /**
@@ -240,8 +277,7 @@ double gain(const TypeVector& types, const ColVector& dataColumn)
 /*
  * Gives you the 0-based index of the column that maximizes information gain.
  */
-size_t bestAttribute(const Dataset::TypeVector& types,
-		const Dataset::DataMatrix& data)
+size_t bestAttribute(const TypeVector& types, const DataMatrix& data)
 {
 	double maxGain = -999;
 	size_t ret = 999;
