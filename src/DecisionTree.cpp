@@ -44,25 +44,29 @@ DecisionTree::Node::Node(size_t attributeIndex, const TypeVector& types,
  * fall into several different classes. Specifying the value of the attribute,
  * is the same as choosing one of its child nodes.
  *
- * parentType: This node chosen iff parent.data[attributeIndex] == parentType
+ * parentAttrValue: Value matched for the parent's distinguishing attribute
  */
-DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentType,
+DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
 		const Node* parent, const TypeVector& types, const DataMatrix& data)
 : attributeIndex{attributeIndex},
-  parentType{parentType},
+  parentAttrValue{parentAttrValue},
   children{},
-  parent{parent}
+  parent{parent},
+  type{NoType}
 {
+	std::unique_ptr<DataMatrix> subsetData;
+	std::unique_ptr<TypeVector> subsetTypes;
+
 	// Take the appropriate subsets of the data if not the root
 	if (parent != nullptr)
 	{
-		assert(parentType != NoType);
+		assert(parentAttrValue != NoType);
 
 		// Calculate how big the data subset will be
 		auto subsetSize = 0;
 		for (auto i = 0; i < data.rows(); ++i)
 		{
-			if (data(i, parent->attributeIndex) == parentType)
+			if (data(i, parent->attributeIndex) == parentAttrValue)
 			{
 				++subsetSize;
 			}
@@ -71,33 +75,33 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentType,
 		assert(subsetSize > 0);
 
 		// Populate the subset with the right rows from the original
-		this->data = std::make_unique<DataMatrix>(subsetSize, data.cols());
-		this->types = std::make_unique<TypeVector>(subsetSize, 1);
+		subsetData = std::make_unique<DataMatrix>(subsetSize, data.cols());
+		subsetTypes = std::make_unique<TypeVector>(subsetSize, 1);
 		auto insertIndex = 0;
 		for (auto i = 0; i < data.rows(); ++i)
 		{
-			if (data(i, parent->attributeIndex) == parentType)
+			if (data(i, parent->attributeIndex) == parentAttrValue)
 			{
-				this->types->row(insertIndex) = types.row(i);
-				this->data->row(insertIndex) = data.row(i);
+				subsetTypes->row(insertIndex) = types.row(i);
+				subsetData->row(insertIndex) = data.row(i);
 				++insertIndex;
 			}
 		}
 	}
 	else
 	{
-		this->data = std::make_unique<DataMatrix>(data);
-		this->types = std::make_unique<TypeVector>(types);
+		subsetData = std::make_unique<DataMatrix>(data);
+		subsetTypes = std::make_unique<TypeVector>(types);
 	}
 
 	// Construct child decision nodes unless we already have only one class
-	if (entropy(*this->types) != 0)
+	if (entropy(*subsetTypes) != 0)
 	{
 		// Find the most informative attribute to base the children on
-		auto childAttribute = bestAttribute(*this->types, *this->data);
+		auto childAttribute = bestAttribute(*subsetTypes, *subsetData);
 
 		// We'll need a new child for every unique value in the column
-		auto uniqueValues = getUniqueValues(this->data->col(attributeIndex));
+		auto uniqueValues = getUniqueValues(subsetData->col(attributeIndex));
 
 		// Make the children
 		for (auto val : uniqueValues)
@@ -106,8 +110,14 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentType,
 			// The child will then further discriminate based on
 			// $childAttribute.
 			children.emplace_front(childAttribute, val, this,
-					*this->types, *this->data);
+					*subsetTypes, *subsetData);
 		}
+	}
+	else
+	{
+		// In a leaf node every data point is of the same type,
+		// which is the type returned by the classifier.
+		type = subsetTypes->operator()(0, 0);
 	}
 }
 
@@ -122,15 +132,14 @@ uint8_t DecisionTree::classify(const Dataset::RowVector& dataPoint) const
 		// Stop if the current node has no children
 		if (node->children.size() == 0)
 		{
-			// In a leaf node every data point is of the same type,
-			// which is the type returned by the classifier.
-			return node->types->operator()(0, 0);
+			assert(node->type != NoType);
+			return node->type;
 		}
 
 		// Advance to the correct child, based on the data point we have
 		for (const auto& child : node->children)
 		{
-			if (child.parentType == dataPoint[node->attributeIndex])
+			if (child.parentAttrValue == dataPoint[node->attributeIndex])
 			{
 				node = &child;
 			}

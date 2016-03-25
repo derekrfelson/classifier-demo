@@ -31,11 +31,10 @@ private:
 				const Dataset::DataMatrix& data);
 
 		size_t attributeIndex;
-		uint8_t parentType;
+		uint8_t parentAttrValue;
 		std::list<Node> children;
 		const Node* parent;
-		std::unique_ptr<Dataset::TypeVector> types;
-		std::unique_ptr<Dataset::DataMatrix> data;
+		uint8_t type;
 	};
 	friend Node;
 
