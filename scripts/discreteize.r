@@ -10,5 +10,5 @@ for (i in 1:4) { x[,i] = discretize(x[,i], categories=4, labels=c(1, 2, 3, 4)) }
 write.table(x, file="../data/irisDiscrete.csv", row.names=FALSE, quote=FALSE, na="", col.names=FALSE, sep=",")
 
 x <- read.csv("../data/heartDisease.csv", header=FALSE)
-for (i in c(1,4,5,8,10)) { x[,i] = discretize(x[,i], categories=4, labels=c(1, 2, 3, 4)) }
+for (i in c(1,4,5,8,10)) { x[,i] = discretize(x[,i], categories=2, labels=c(1, 2)) }
 write.table(x, file="../data/heartDiseaseDiscrete.csv", row.names=FALSE, quote=FALSE, na="", col.names=FALSE, sep=",")
