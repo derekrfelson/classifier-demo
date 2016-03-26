@@ -15,10 +15,6 @@
 #include <iostream>
 #include <sstream>
 
-constexpr uint8_t NoType = 255;
-constexpr size_t NoAttrIndex = 99999;
-constexpr size_t NoParentAttrValue = 99999;
-
 static std::vector<uint8_t> colToStdVector(const ColVector& col);
 static std::vector<uint8_t> rowToStdVector(const RowVector& row);
 static std::vector<uint8_t> getUniqueValues(std::vector<uint8_t> vec);
@@ -171,13 +167,21 @@ uint8_t DecisionTree::classify(const RowVector& dataPoint) const
 			}
 		}
 
-		// If we reach here and there was no correct child... something broke
-		assert(foundChild);
+		// If we reach here and there was no correct child, that means
+		// we are unable to classify the given data point because we
+		// had nothing like it in the training set.
+		//
+		// This actually happens quite a bit if the training set is too
+		// small or some dimensions have rare values.
+		if (!foundChild)
+		{
+			return NoType;
+		}
 	}
 
-	// Failed to find a type
+	// Failed to find a type for unknown reasons. Should never happen.
 	assert(false);
-	return NoType;
+	return NoType; // Just prevents a compiler warning
 }
 
 std::string DecisionTree::Node::name() const
@@ -352,5 +356,3 @@ std::vector<uint8_t> getUniqueValues(std::vector<uint8_t> vec)
 	vec.erase(std::unique(begin(vec), end(vec)), end(vec));
 	return vec;
 }
-
-

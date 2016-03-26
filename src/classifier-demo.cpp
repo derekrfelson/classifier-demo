@@ -93,8 +93,10 @@ void classifyAndTest(const Dataset& data,
 {
 	std::vector<unsigned int> timesRight(numFolds, 0);
 	std::vector<unsigned int> timesWrong(numFolds, 0);
+	std::vector<unsigned int> timesUndecided(numFolds, 0);
 	auto totalTimesRight = 0;
 	auto totalTimesWrong = 0;
+	auto totalTimesUndecided = 0;
 
 	// Classify and test the data
 	for (auto k = 1; k <= numFolds; ++k)
@@ -106,16 +108,17 @@ void classifyAndTest(const Dataset& data,
 		// Create a classifier for the dataset
 		auto c = partitions.training.classifier(ctype);
 
+		// If it's a decision tree, output it
+		if (ctype == ClassifierType::DECISION_TREE)
+		{
+			dynamic_cast<DecisionTree*>(c.get())->print(std::cout);
+		}
+
 		// Test each point in the testing set
 		for (auto i = 0; i < partitions.testing.size(); ++i)
 		{
 			// Classify
 			auto type = c->classify(partitions.testing.getPoint(i));
-
-			if (ctype == ClassifierType::DECISION_TREE)
-			{
-				dynamic_cast<DecisionTree*>(c.get())->print(std::cout);
-			}
 
 			if (verbosity > 1)
 			{
@@ -130,6 +133,10 @@ void classifyAndTest(const Dataset& data,
 			{
 				++timesRight[k-1];
 			}
+			else if (type == NoType)
+			{
+				++timesUndecided[k-1];
+			}
 			else
 			{
 				++timesWrong[k-1];
@@ -141,21 +148,26 @@ void classifyAndTest(const Dataset& data,
 		{
 			std::cout << "Fold " << k << ": timesRight=" << timesRight[k-1]
 					  << ", timesWrong=" << timesWrong[k-1]
+					  << ", timesUndecided=" << timesUndecided[k-1]
 		              << ", accuracy: " << timesRight[k-1]/
-					     static_cast<double>(timesWrong[k-1]+timesRight[k-1])
+					     static_cast<double>(timesWrong[k-1]
+										+timesRight[k-1]+timesUndecided[k-1])
 				      << std::endl << std::endl;
 		}
 
 		// Update overall accuracy
 		totalTimesRight += timesRight[k-1];
+		totalTimesUndecided += timesUndecided[k-1];
 		totalTimesWrong += timesWrong[k-1];
 	}
 
 	// Report overall accuracy
 	std::cout << "Total: timesRight=" << totalTimesRight
 			  << ", timesWrong=" << totalTimesWrong
+			  << ", timesUndecided=" << totalTimesUndecided
 			  << ", accuracy=" << totalTimesRight
-			      / static_cast<double>(totalTimesRight + totalTimesWrong)
+			      / static_cast<double>(totalTimesRight
+			    		  + totalTimesWrong + totalTimesUndecided)
 			  << std::endl << std::endl << std::endl;
 }
 

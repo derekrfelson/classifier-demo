@@ -34,4 +34,8 @@ constexpr auto IrisClasses = 3;
 constexpr auto HeartDiseaseFields = 13;
 constexpr auto HeartDiseaseClasses = 4;
 
+constexpr uint8_t NoType = 255;
+constexpr size_t NoAttrIndex = 99999;
+constexpr size_t NoParentAttrValue = 99999;
+
 #endif /* TYPES_H_ */
