@@ -2,6 +2,7 @@
 #include <string>
 #include <array>
 #include "BayesClassifier.h"
+#include "DecisionTree.h"
 #include "Partition.h"
 #include "Dataset.h"
 #include "Types.h"
@@ -110,6 +111,11 @@ void classifyAndTest(const Dataset& data,
 		{
 			// Classify
 			auto type = c->classify(partitions.testing.getPoint(i));
+
+			if (ctype == ClassifierType::DECISION_TREE)
+			{
+				dynamic_cast<DecisionTree*>(c.get())->print(std::cout);
+			}
 
 			if (verbosity > 1)
 			{

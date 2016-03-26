@@ -27,23 +27,29 @@ private:
 	struct Node
 	{
 	public:
-		explicit Node(size_t attributeIndex, const TypeVector& types,
-				const DataMatrix& data);
-		explicit Node(size_t attributeIndex, uint8_t parentType,
-				const Node* parent, const TypeVector& types,
-				const DataMatrix& data, size_t attributesChecked);
+		explicit Node(const TypeVector& types, const DataMatrix& data,
+				DecisionTree& dt);
+		explicit Node(size_t parentAttrValue, const Node* parent,
+				const TypeVector& types, const DataMatrix& data,
+				size_t attributesChecked, DecisionTree& dt);
 		std::ostream& print(std::ostream& out) const;
 		std::string name() const;
 
-		size_t attributeIndex;
-		uint8_t parentAttrValue;
-		std::list<Node> children;
+		// Set by parent
+		size_t parentAttrValue;
 		const Node* parent;
+		size_t attributesChecked;
+		size_t nodeNumber;
+
+		// Calculated
+		std::list<Node> children;
+		size_t attributeIndex;
 		uint8_t type;
 	};
 	friend Node;
 
 	std::unique_ptr<Node> root;
+	size_t nodeCount;
 };
 
 double entropy(const TypeVector& types);

@@ -12,26 +12,29 @@
 #include <algorithm>
 #include <cassert>
 #include <ostream>
+#include <iostream>
 #include <sstream>
 
 constexpr uint8_t NoType = 255;
+constexpr size_t NoAttrIndex = 99999;
+constexpr size_t NoParentAttrValue = 99999;
 
 static std::vector<uint8_t> colToStdVector(const ColVector& col);
 static std::vector<uint8_t> rowToStdVector(const RowVector& row);
 static std::vector<uint8_t> getUniqueValues(std::vector<uint8_t> vec);
 
 DecisionTree::DecisionTree(const TypeVector& types, const DataMatrix& data)
+: nodeCount{0}
 {
-	auto best = bestAttribute(types, data);
-	root = std::make_unique<Node>(best, types, data);
+	root = std::make_unique<Node>(types, data, *this);
 }
 
 /**
  * Initialize a root node on the decision tree.
  */
-DecisionTree::Node::Node(size_t attributeIndex, const TypeVector& types,
-		const DataMatrix& data)
-: Node(attributeIndex, NoType, nullptr, types, data, 0)
+DecisionTree::Node::Node(const TypeVector& types, const DataMatrix& data,
+		DecisionTree& dt)
+: Node{NoParentAttrValue, nullptr, types, data, 0, dt}
 {
 }
 
@@ -39,69 +42,29 @@ DecisionTree::Node::Node(size_t attributeIndex, const TypeVector& types,
  * Initialize a child node on the decision tree.
  *
  * Each node on the tree looks at an attribute, the value of which can
- * fall into several different classes. Specifying the value of the attribute,
- * is the same as choosing one of its child nodes.
+ * fall into several different classes.
  *
  * parentAttrValue: Value matched for the parent's distinguishing attribute
  */
-DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
-		const Node* parent, const TypeVector& types, const DataMatrix& data,
-		 size_t attributesChecked)
-: attributeIndex{attributeIndex},
-  parentAttrValue{parentAttrValue},
-  children{},
+DecisionTree::Node::Node(size_t parentAttrValue, const Node* parent,
+		const TypeVector& types, const DataMatrix& data,
+		 size_t attributesChecked, DecisionTree& dt)
+: parentAttrValue{parentAttrValue},
   parent{parent},
-  type{NoType}
+  attributesChecked{attributesChecked},
+  children{},
+  attributeIndex{NoAttrIndex},
+  type{NoType},
+  nodeNumber{dt.nodeCount++}
 {
-	std::unique_ptr<DataMatrix> subsetData;
-	std::unique_ptr<TypeVector> subsetTypes;
-
-	// Take the appropriate subsets of the data if not the root
-	if (parent != nullptr)
-	{
-		assert(parentAttrValue != NoType);
-
-		// Calculate how big the data subset will be
-		auto subsetSize = 0;
-		for (auto i = 0; i < data.rows(); ++i)
-		{
-			if (data(i, parent->attributeIndex) == parentAttrValue)
-			{
-				++subsetSize;
-			}
-		}
-
-		assert(subsetSize > 0);
-
-		// Populate the subset with the right rows from the original
-		subsetData = std::make_unique<DataMatrix>(subsetSize, data.cols());
-		subsetTypes = std::make_unique<TypeVector>(subsetSize, 1);
-		auto insertIndex = 0;
-		for (auto i = 0; i < data.rows(); ++i)
-		{
-			if (data(i, parent->attributeIndex) == parentAttrValue)
-			{
-				subsetTypes->row(insertIndex) = types.row(i);
-				subsetData->row(insertIndex) = data.row(i);
-				++insertIndex;
-			}
-		}
-	}
-	else
-	{
-		// This must be a root node, so the data is whatever was passed in
-		subsetData = std::make_unique<DataMatrix>(data);
-		subsetTypes = std::make_unique<TypeVector>(types);
-	}
-
 	// Turn this node into a correct leaf node, or make its children
-	if (entropy(*subsetTypes) == 0)
+	if (entropy(types) == 0)
 	{
 		// Case 1: The subset consists of only 1 type. Perfect!
 
 		// In an ideal leaf node every data point is of the same type,
 		// which is the type returned by the classifier.
-		type = subsetTypes->operator()(0, 0);
+		type = types(0, 0);
 	}
 	else if (attributesChecked >= data.cols())
 	{
@@ -110,13 +73,13 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
 
 		// Return the most likely type
 		auto uniqueTypes
-			= getUniqueValues(colToStdVector(subsetTypes->cast<Decimal>()));
+			= getUniqueValues(colToStdVector(types.cast<Decimal>()));
 		std::vector<size_t> counts(uniqueTypes.size(), 0);
 		for (auto i = 0; i < uniqueTypes.size(); ++i)
 		{
-			for (auto j = 0; j < subsetTypes->size(); ++j)
+			for (auto j = 0; j < types.size(); ++j)
 			{
-				if ((*subsetTypes)[j] == uniqueTypes[i])
+				if (types[j] == uniqueTypes[i])
 				{
 					++counts[i];
 				}
@@ -128,23 +91,44 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
 	{
 		// Case 3: We can improve by checking more attributes
 
-		// Construct child decision nodes unless we already have only one class
-
 		// Find the most informative attribute to base the children on
-		auto childAttribute = bestAttribute(*subsetTypes, *subsetData);
+		attributeIndex = bestAttribute(types, data);
 
 		// We'll need a new child for every unique value in the column
 		auto uniqueValues = getUniqueValues(
-				colToStdVector(subsetData->col(attributeIndex)));
+				colToStdVector(data.col(attributeIndex)));
 
 		// Make the children
 		for (auto val : uniqueValues)
 		{
-			// You get to the child node by selecting $val for $attribute.
-			// The child will then further discriminate based on
-			// $childAttribute.
-			children.emplace_front(childAttribute, val, this,
-					*subsetTypes, *subsetData, attributesChecked + 1);
+			// Calculate how big the data subset will be
+			auto subsetSize = 0;
+			for (auto i = 0; i < data.rows(); ++i)
+			{
+				if (data(i, attributeIndex) == val)
+				{
+					++subsetSize;
+				}
+			}
+
+			assert(subsetSize > 0);
+
+			// Populate the subset with the right rows from the original
+			DataMatrix subsetData{subsetSize, data.cols()};
+			TypeVector subsetTypes{subsetSize, 1};
+			auto insertIndex = 0;
+			for (auto i = 0; i < data.rows(); ++i)
+			{
+				if (data(i, attributeIndex) == val)
+				{
+					subsetTypes.row(insertIndex) = types.row(i);
+					subsetData.row(insertIndex) = data.row(i);
+					++insertIndex;
+				}
+			}
+
+			children.emplace_front(val, this, subsetTypes, subsetData,
+					attributesChecked + 1, dt);
 		}
 	}
 }
@@ -155,8 +139,15 @@ DecisionTree::Node::Node(size_t attributeIndex, uint8_t parentAttrValue,
 uint8_t DecisionTree::classify(const RowVector& dataPoint) const
 {
 	const auto *node = root.get();
+
+	std::cout << "Classifying" << std::endl;
+	std::cout << dataPoint.cast<int>();
+	std::cout << std::endl;
+
 	while (node != nullptr)
 	{
+		bool foundChild = false;
+
 		// Stop if the current node has no children
 		if (node->children.size() == 0)
 		{
@@ -164,14 +155,24 @@ uint8_t DecisionTree::classify(const RowVector& dataPoint) const
 			return node->type;
 		}
 
+		std::cout << "Node with AttrIndex = " << node->attributeIndex << " looking for child with parentAttrValue = " << static_cast<int>(dataPoint[node->attributeIndex]) << std::endl;
 		// Advance to the correct child, based on the data point we have
 		for (const auto& child : node->children)
 		{
+			assert(child.parentAttrValue != NoParentAttrValue);
+			assert(node->attributeIndex != NoAttrIndex);
+
+			std::cout << "  Examining child with attributeIndex = " << child.attributeIndex << " and parentVal = " << static_cast<int>(child.parentAttrValue) << std::endl;
 			if (child.parentAttrValue == dataPoint[node->attributeIndex])
 			{
 				node = &child;
+				foundChild = true;
+				break;
 			}
 		}
+
+		// If we reach here and there was no correct child... something broke
+		assert(foundChild);
 	}
 
 	// Failed to find a type
@@ -181,43 +182,48 @@ uint8_t DecisionTree::classify(const RowVector& dataPoint) const
 
 std::string DecisionTree::Node::name() const
 {
-	if (children.size() == 0)
-	{
-		std::stringstream s;
-		s << "\"Type " << static_cast<int>(type) << "\"";
-		return s.str();
-	}
-	else
-	{
-		std::stringstream s;
-		s << "\"Attr " << attributeIndex << "\"";
-		return s.str();
-	}
+	std::stringstream s;
+	s << nodeNumber;
+	return s.str();
 }
 
 std::ostream& DecisionTree::Node::print(std::ostream& out) const
 {
 	if (children.size() == 0)
 	{
-		out << name() << std::endl;
+		out << nodeNumber << " [label=\"Type "
+			<< static_cast<int>(type) << "\"]" << std::endl;
 	}
 	else
 	{
+		out << nodeNumber << " [label=\"Attr "
+					<< static_cast<int>(attributeIndex) << "\"]"
+					<< std::endl;
+
 		for (const auto& child : children)
 		{
-			out << name() << " -> " << child.name()
+			out << nodeNumber
+			    << " -> " << child.nodeNumber
 			    << " [label=\" =" << static_cast<int>(child.parentAttrValue)
-				<< "\"" << std::endl;
+				<< "\"]" << std::endl;
+			child.print(out);
 		}
 	}
+	return out;
 }
 
 std::ostream& DecisionTree::print(std::ostream& out) const
 {
-	out << "Digraph BST {" << std::endl
+	out << "digraph DT {" << std::endl
 	    << "    node [fontname=\"Arial\"];" << std::endl;
 	root->print(out);
 	out << "}" << std::endl;
+	return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const DecisionTree& dt)
+{
+	return dt.print(out);
 }
 
 /**
