@@ -12,8 +12,8 @@
 #include <algorithm>
 #include <cassert>
 #include <ostream>
-#include <iostream>
 #include <sstream>
+#include <iostream>
 
 static std::vector<uint8_t> colToStdVector(const ColVector& col);
 static std::vector<uint8_t> rowToStdVector(const RowVector& row);
@@ -62,69 +62,80 @@ DecisionTree::Node::Node(size_t parentAttrValue, const Node* parent,
 		// which is the type returned by the classifier.
 		type = types(0, 0);
 	}
-	else if (attributesChecked >= data.cols())
-	{
-		// Case 2: We've checked all the attributes
-		// and we still can't build a perfect classifier
-
-		// Return the most likely type
-		auto uniqueTypes
-			= getUniqueValues(colToStdVector(types.cast<Decimal>()));
-		std::vector<size_t> counts(uniqueTypes.size(), 0);
-		for (auto i = 0; i < uniqueTypes.size(); ++i)
-		{
-			for (auto j = 0; j < types.size(); ++j)
-			{
-				if (types[j] == uniqueTypes[i])
-				{
-					++counts[i];
-				}
-			}
-		}
-		type = uniqueTypes[*std::max_element(cbegin(counts), cend(counts))];
-	}
 	else
 	{
-		// Case 3: We can improve by checking more attributes
-
-		// Find the most informative attribute to base the children on
+		// Find the most informative attribute to base the children on.
+		// Note that this returns NoAttrIndex if none of the attributes
+		// will help improve the match.
 		attributeIndex = bestAttribute(types, data);
 
-		// We'll need a new child for every unique value in the column
-		auto uniqueValues = getUniqueValues(
-				colToStdVector(data.col(attributeIndex)));
-
-		// Make the children
-		for (auto val : uniqueValues)
+		// If the data still fall into more than one class, but we've already
+		// checked all the attributes (or if checking the remaining attributes
+		// won't improve our accuracy), stop and set the type to whatever one
+		// has the maximum likelihood (count and see what's the most common).
+		if (attributesChecked >= data.cols() || attributeIndex == NoAttrIndex)
 		{
-			// Calculate how big the data subset will be
-			auto subsetSize = 0;
-			for (auto i = 0; i < data.rows(); ++i)
+			// Case 2: We've checked all the attributes
+			// and we still can't build a perfect classifier
+
+			// Return the most likely type
+			auto uniqueTypes
+				= getUniqueValues(colToStdVector(types.cast<Decimal>()));
+			std::vector<size_t> counts(uniqueTypes.size(), 0);
+			for (auto i = 0; i < uniqueTypes.size(); ++i)
 			{
-				if (data(i, attributeIndex) == val)
+				for (auto j = 0; j < types.size(); ++j)
 				{
-					++subsetSize;
+					if (types[j] == uniqueTypes[i])
+					{
+						++counts[i];
+					}
 				}
 			}
+			type = uniqueTypes[*std::max_element(cbegin(counts),
+					cend(counts))];
+		}
+		else
+		{
+			// Case 3: We can improve by checking more attributes,
+			// so generate child nodes.
 
-			assert(subsetSize > 0);
+			// We'll need a new child for every unique value in the column
+			auto uniqueValues = getUniqueValues(colToStdVector(
+					data.col(attributeIndex)));
 
-			// Populate the subset with the right rows from the original
-			DataMatrix subsetData{subsetSize, data.cols()};
-			TypeVector subsetTypes{subsetSize, 1};
-			auto insertIndex = 0;
-			for (auto i = 0; i < data.rows(); ++i)
+			// Make the children
+			for (auto val : uniqueValues)
 			{
-				if (data(i, attributeIndex) == val)
+				// Calculate how big the data subset will be
+				auto subsetSize = 0;
+				for (auto i = 0; i < data.rows(); ++i)
 				{
-					subsetTypes.row(insertIndex) = types.row(i);
-					subsetData.row(insertIndex) = data.row(i);
-					++insertIndex;
+					if (data(i, attributeIndex) == val)
+					{
+						++subsetSize;
+					}
 				}
-			}
 
-			children.emplace_front(val, this, subsetTypes, subsetData,
-					attributesChecked + 1, dt);
+				assert(subsetSize > 0);
+
+				// Populate the subset with the right rows from the original
+				DataMatrix subsetData{subsetSize, data.cols()};
+				TypeVector subsetTypes{subsetSize, 1};
+				auto insertIndex = 0;
+				for (auto i = 0; i < data.rows(); ++i)
+				{
+					if (data(i, attributeIndex) == val)
+					{
+						subsetTypes.row(insertIndex) = types.row(i);
+						subsetData.row(insertIndex) = data.row(i);
+						++insertIndex;
+					}
+				}
+
+				children.emplace_front(val, this, subsetTypes, subsetData,
+						attributesChecked + 1, dt);
+			}
 		}
 	}
 }
@@ -135,10 +146,6 @@ DecisionTree::Node::Node(size_t parentAttrValue, const Node* parent,
 uint8_t DecisionTree::classify(const RowVector& dataPoint) const
 {
 	const auto *node = root.get();
-
-	std::cout << "Classifying" << std::endl;
-	std::cout << dataPoint.cast<int>();
-	std::cout << std::endl;
 
 	while (node != nullptr)
 	{
@@ -151,14 +158,12 @@ uint8_t DecisionTree::classify(const RowVector& dataPoint) const
 			return node->type;
 		}
 
-		std::cout << "Node with AttrIndex = " << node->attributeIndex << " looking for child with parentAttrValue = " << static_cast<int>(dataPoint[node->attributeIndex]) << std::endl;
 		// Advance to the correct child, based on the data point we have
 		for (const auto& child : node->children)
 		{
 			assert(child.parentAttrValue != NoParentAttrValue);
 			assert(node->attributeIndex != NoAttrIndex);
 
-			std::cout << "  Examining child with attributeIndex = " << child.attributeIndex << " and parentVal = " << static_cast<int>(child.parentAttrValue) << std::endl;
 			if (child.parentAttrValue == dataPoint[node->attributeIndex])
 			{
 				node = &child;
@@ -332,6 +337,16 @@ size_t bestAttribute(const TypeVector& types, const DataMatrix& data)
 			maxGain = colGain;
 		}
 	}
+
+	// If none of the columns improved the entropy, we can't really say
+	// that there is a best column. Instead of defaulting to attribute 0,
+	// we return a special value.
+	if (maxGain == 0)
+	{
+		std::cout << "Max gain is 0!" << std::endl;
+		return NoAttrIndex;
+	}
+
 	return ret;
 }
 
