@@ -14,7 +14,8 @@ void classifyAndTest(const Dataset& data,
 		ClassifierType ctype,
 		int verbosity,
 		std::ostream& resultsOut,
-		std::string modelOutName);
+		std::string modelOutName,
+		std::ostream& finalResults);
 
 int main(int argc, char** argv)
 {
@@ -57,9 +58,25 @@ int main(int argc, char** argv)
 			"Decision Tree"
 	};
 
+	// Open final results CSV
+	auto finalResults = std::ofstream{"output/finalResults.txt"};
+	assert(finalResults.is_open());
+
+	// Output column labels on final results CSV
+	finalResults << "*,";
 	for (auto datasetNum = 0; datasetNum < 3; ++datasetNum)
 	{
-		for (auto classifierNum = 0; classifierNum < 4; ++classifierNum)
+		finalResults << datasetLabels[datasetNum] << " 10-fold,";
+		finalResults << datasetLabels[datasetNum] << " leave-one-out,";
+	}
+	finalResults << std::endl;
+
+	for (auto classifierNum = 0; classifierNum < 4; ++classifierNum)
+	{
+		// Output row label for final results CSV
+		finalResults << classifierTypeLabels[classifierNum];
+
+		for (auto datasetNum = 0; datasetNum < 3; ++datasetNum)
 		{
 			std::stringstream out2name;
 			out2name << "output/"
@@ -78,8 +95,9 @@ int main(int argc, char** argv)
 					  << "(" << classifierTypeLabels[classifierNum]
 					  << " classifier)"
 					  << std::endl << std::endl;
+
 			classifyAndTest(data, 10, classifierTypes[classifierNum],
-					verbosity, resultsFile, modelFileName);
+					verbosity, resultsFile, modelFileName, finalResults);
 			resultsFile.close();
 
 			// Leave-one-out cross validation
@@ -94,9 +112,14 @@ int main(int argc, char** argv)
 					  << std::endl << std::endl;
 			classifyAndTest(data, datasets[datasetNum].size(),
 					classifierTypes[classifierNum], verbosity,
-					resultsFile, modelFileName);
+					resultsFile, modelFileName, finalResults);
+			resultsFile.close();
 		}
+
+		finalResults << std::endl;
 	}
+
+	finalResults.close();
 
 	return 0;
 }
@@ -106,7 +129,8 @@ void classifyAndTest(const Dataset& data,
 		ClassifierType ctype,
 		int verbosity,
 		std::ostream& resultsOut,
-		std::string modelOutName)
+		std::string modelOutName,
+		std::ostream& finalResults)
 {
 	std::vector<unsigned int> timesRight(numFolds, 0);
 	std::vector<unsigned int> timesWrong(numFolds, 0);
@@ -133,6 +157,7 @@ void classifyAndTest(const Dataset& data,
 			auto modelOut = std::ofstream{name.str()};
 			assert(modelOut.is_open());
 			dynamic_cast<DecisionTree*>(c.get())->print(modelOut);
+			modelOut.close();
 		}
 
 		// Test each point in the testing set
@@ -180,12 +205,14 @@ void classifyAndTest(const Dataset& data,
 	}
 
 	// Report overall accuracy
+	auto accuracy = totalTimesRight / static_cast<double>(totalTimesRight
+		    		  + totalTimesWrong + totalTimesUndecided);
 	resultsOut << "Total: timesRight=" << totalTimesRight
 			  << ", timesWrong=" << totalTimesWrong
 			  << ", timesUndecided=" << totalTimesUndecided
-			  << ", accuracy=" << totalTimesRight
-			      / static_cast<double>(totalTimesRight
-			    		  + totalTimesWrong + totalTimesUndecided)
+			  << ", accuracy=" << accuracy
 			  << std::endl << std::endl << std::endl;
+
+	finalResults << "," << accuracy;
 }
 
