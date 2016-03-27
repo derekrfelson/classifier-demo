@@ -58,16 +58,17 @@ int main(int argc, char** argv)
 			"Decision Tree"
 	};
 
-	// Open final results CSV
-	auto finalResults = std::ofstream{"output/finalResults.txt"};
+	// Open final results CSV in append mode, so that we can build up
+	// lots of results and do statistics on them.
+	auto finalResults = std::ofstream{"output/finalResults.txt",
+		std::ofstream::app};
 	assert(finalResults.is_open());
 
 	// Output column labels on final results CSV
-	finalResults << "*,";
 	for (auto datasetNum = 0; datasetNum < 3; ++datasetNum)
 	{
-		finalResults << datasetLabels[datasetNum] << " 10-fold,";
-		finalResults << datasetLabels[datasetNum] << " leave-one-out,";
+		finalResults << ", " << datasetLabels[datasetNum] << " 10-fold";
+		finalResults << ", " << datasetLabels[datasetNum] << " leave-one-out";
 	}
 	finalResults << std::endl;
 
@@ -119,6 +120,7 @@ int main(int argc, char** argv)
 		finalResults << std::endl;
 	}
 
+	finalResults << std::endl;
 	finalResults.close();
 
 	return 0;
@@ -152,12 +154,18 @@ void classifyAndTest(const Dataset& data,
 		// If it's a decision tree, output it
 		if (ctype == ClassifierType::DECISION_TREE)
 		{
-			std::stringstream name;
-			name << modelOutName << "-" << k << ".dot";
-			auto modelOut = std::ofstream{name.str()};
-			assert(modelOut.is_open());
-			dynamic_cast<DecisionTree*>(c.get())->print(modelOut);
-			modelOut.close();
+			// Although for leave-one-out testing we only print one
+			// tree, since there's ~100 of them and they all look
+			// nearly identical.
+			if (numFolds <= 20 || k == 1)
+			{
+				std::stringstream name;
+				name << modelOutName << "-" << k << ".dot";
+				auto modelOut = std::ofstream{name.str()};
+				assert(modelOut.is_open());
+				dynamic_cast<DecisionTree*>(c.get())->print(modelOut);
+				modelOut.close();
+			}
 		}
 
 		// Test each point in the testing set
