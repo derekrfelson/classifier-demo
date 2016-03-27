@@ -107,14 +107,14 @@ TEST(GainTests, SomeGain)
 
 // Best Attribute tests
 
-TEST(BestAttributeTests, OneColumn)
+TEST(BestAttributeTests, NoBestColumn)
 {
 	TypeVector testTypes{1, 1};
 	DataMatrix testData{1, 1};
 	testTypes << 1;
 	testData << 1;
 
-	EXPECT_EQ(0, bestAttribute(testTypes, testData));
+	EXPECT_EQ(NoAttrIndex, bestAttribute(testTypes, testData));
 }
 
 TEST(BestAttributeTests, TwoColumns)
