@@ -343,7 +343,6 @@ size_t bestAttribute(const TypeVector& types, const DataMatrix& data)
 	// we return a special value.
 	if (maxGain == 0)
 	{
-		std::cout << "Max gain is 0!" << std::endl;
 		return NoAttrIndex;
 	}
 

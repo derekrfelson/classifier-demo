@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <array>
 #include "BayesClassifier.h"
@@ -11,7 +12,9 @@
 void classifyAndTest(const Dataset& data,
 		unsigned int numFolds,
 		ClassifierType ctype,
-		int verbosity);
+		int verbosity,
+		std::ostream& resultsOut,
+		std::string modelOutName);
 
 int main(int argc, char** argv)
 {
@@ -58,28 +61,40 @@ int main(int argc, char** argv)
 	{
 		for (auto classifierNum = 0; classifierNum < 4; ++classifierNum)
 		{
+			std::stringstream out2name;
+			out2name << "output/"
+					 << datasetLabels[datasetNum]
+					 << "-" << classifierTypeLabels[classifierNum];
+
+			// 10-fold cross validation
+			auto resultsFile = std::ofstream{out2name.str()
+				+ "-10fold-results.txt"};
+			assert(resultsFile.is_open());
+			auto modelFileName  = out2name.str() + "-10fold-model";
 			auto& data = classifierNum < 3
 					? datasets[datasetNum] : discreteDatasets[datasetNum];
-
 			std::cout << datasetLabels[datasetNum]
 					  << " data using 10-fold cross-validation "
 					  << "(" << classifierTypeLabels[classifierNum]
 					  << " classifier)"
 					  << std::endl << std::endl;
-			classifyAndTest(data,
-					10,
-					classifierTypes[classifierNum],
-					verbosity);
+			classifyAndTest(data, 10, classifierTypes[classifierNum],
+					verbosity, resultsFile, modelFileName);
+			resultsFile.close();
 
+			// Leave-one-out cross validation
+			resultsFile = std::ofstream{out2name.str()
+				+ "-leaveOneOut-results.txt"};
+			assert(resultsFile.is_open());
+			modelFileName  = out2name.str() + "-leaveOneOut-model";
 			std::cout << datasetLabels[datasetNum]
 					  << " data using leave-one-out cross-validation "
 					  << "(" << classifierTypeLabels[classifierNum]
 					  << " classifier)"
 					  << std::endl << std::endl;
-			classifyAndTest(data,
-					datasets[datasetNum].size(),
-					classifierTypes[classifierNum],
-					verbosity);
+			classifyAndTest(data, datasets[datasetNum].size(),
+					classifierTypes[classifierNum], verbosity,
+					resultsFile, modelFileName);
 		}
 	}
 
@@ -89,7 +104,9 @@ int main(int argc, char** argv)
 void classifyAndTest(const Dataset& data,
 		unsigned int numFolds,
 		ClassifierType ctype,
-		int verbosity)
+		int verbosity,
+		std::ostream& resultsOut,
+		std::string modelOutName)
 {
 	std::vector<unsigned int> timesRight(numFolds, 0);
 	std::vector<unsigned int> timesWrong(numFolds, 0);
@@ -111,7 +128,11 @@ void classifyAndTest(const Dataset& data,
 		// If it's a decision tree, output it
 		if (ctype == ClassifierType::DECISION_TREE)
 		{
-			dynamic_cast<DecisionTree*>(c.get())->print(std::cout);
+			std::stringstream name;
+			name << modelOutName << "-" << k << ".dot";
+			auto modelOut = std::ofstream{name.str()};
+			assert(modelOut.is_open());
+			dynamic_cast<DecisionTree*>(c.get())->print(modelOut);
 		}
 
 		// Test each point in the testing set
@@ -120,13 +141,10 @@ void classifyAndTest(const Dataset& data,
 			// Classify
 			auto type = c->classify(partitions.testing.getPoint(i));
 
-			if (verbosity > 1)
-			{
-				std::cout << "Decided class " << static_cast<int>(type)
+			resultsOut << "Decided class " << static_cast<int>(type)
 					<< " for " << partitions.testing.getName(i) << " (actual "
 					<< static_cast<int>(partitions.testing.getType(i))
 					<< "): " << partitions.testing.getPoint(i) << std::endl;
-			}
 
 			// Update counters
 			if (type == partitions.testing.getType(i))
@@ -144,9 +162,9 @@ void classifyAndTest(const Dataset& data,
 		}
 
 		// Report the accuracy on this fold (unless we're just doing 1 element)
-		if (partitions.testing.size() > 1 && verbosity > 0)
+		if (partitions.testing.size() > 1)
 		{
-			std::cout << "Fold " << k << ": timesRight=" << timesRight[k-1]
+			resultsOut << "Fold " << k << ": timesRight=" << timesRight[k-1]
 					  << ", timesWrong=" << timesWrong[k-1]
 					  << ", timesUndecided=" << timesUndecided[k-1]
 		              << ", accuracy: " << timesRight[k-1]/
@@ -162,7 +180,7 @@ void classifyAndTest(const Dataset& data,
 	}
 
 	// Report overall accuracy
-	std::cout << "Total: timesRight=" << totalTimesRight
+	resultsOut << "Total: timesRight=" << totalTimesRight
 			  << ", timesWrong=" << totalTimesWrong
 			  << ", timesUndecided=" << totalTimesUndecided
 			  << ", accuracy=" << totalTimesRight
