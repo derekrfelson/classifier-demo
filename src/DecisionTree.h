@@ -33,18 +33,19 @@ private:
 				const TypeVector& types, const DataMatrix& data,
 				size_t attributesChecked, DecisionTree& dt);
 		std::ostream& print(std::ostream& out) const;
-		std::string name() const;
 
 		// Set by parent
 		size_t parentAttrValue;
 		const Node* parent;
 		size_t attributesChecked;
-		size_t nodeNumber;
+		size_t nodeNumber; // Used for graph output
 
 		// Calculated
 		std::list<Node> children;
 		size_t attributeIndex;
 		uint8_t type;
+		size_t dataSize; // Used for graph output
+		double dataEntropy; // Used for graph output
 	};
 	friend Node;
 

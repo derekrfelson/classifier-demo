@@ -14,6 +14,7 @@
 #include <ostream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 
 static std::vector<uint8_t> colToStdVector(const ColVector& col);
 static std::vector<uint8_t> rowToStdVector(const RowVector& row);
@@ -51,10 +52,12 @@ DecisionTree::Node::Node(size_t parentAttrValue, const Node* parent,
   children{},
   attributeIndex{NoAttrIndex},
   type{NoType},
-  nodeNumber{dt.nodeCount++}
+  nodeNumber{dt.nodeCount++},
+  dataSize{static_cast<size_t>(data.rows())},
+  dataEntropy{entropy(types)}
 {
 	// Turn this node into a correct leaf node, or make its children
-	if (entropy(types) == 0)
+	if (dataEntropy == 0)
 	{
 		// Case 1: The subset consists of only 1 type. Perfect!
 
@@ -189,24 +192,30 @@ uint8_t DecisionTree::classify(const RowVector& dataPoint) const
 	return NoType; // Just prevents a compiler warning
 }
 
-std::string DecisionTree::Node::name() const
-{
-	std::stringstream s;
-	s << nodeNumber;
-	return s.str();
-}
-
 std::ostream& DecisionTree::Node::print(std::ostream& out) const
 {
+	// Limit output in number of decimal places
+	auto oldflags = out.flags();
+	auto oldprecision = out.precision();
+	out << std::fixed << std::setprecision(3);
+
 	if (children.size() == 0)
 	{
-		out << nodeNumber << " [label=\"Type "
-			<< static_cast<int>(type) << "\"]" << std::endl;
+		out << nodeNumber << " [";
+		if (dataEntropy > 0)
+		{
+			out << "color=\"red\",";
+		}
+		out << "label=\"Type " << static_cast<int>(type)
+			<< " |{ " << dataSize << " | "
+			<< dataEntropy << "}" << "\"]" << std::endl;
 	}
 	else
 	{
 		out << nodeNumber << " [label=\"Attr "
-					<< static_cast<int>(attributeIndex) << "\"]"
+					<< attributeIndex
+					<< " |{ " << dataSize << " | "
+					<< dataEntropy << "}" << "\"]"
 					<< std::endl;
 
 		for (const auto& child : children)
@@ -218,13 +227,18 @@ std::ostream& DecisionTree::Node::print(std::ostream& out) const
 			child.print(out);
 		}
 	}
+
+	// Restore old output behaviour
+	out.flags(oldflags);
+	out.precision(oldprecision);
+
 	return out;
 }
 
 std::ostream& DecisionTree::print(std::ostream& out) const
 {
 	out << "digraph DT {" << std::endl
-	    << "    node [fontname=\"Arial\"];" << std::endl;
+	    << "    node [shape=record, fontname=\"Arial\"];" << std::endl;
 	root->print(out);
 	out << "}" << std::endl;
 	return out;
