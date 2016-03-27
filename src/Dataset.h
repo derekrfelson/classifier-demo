@@ -31,7 +31,6 @@ public:
 	Partition<Dataset> partition(size_t startIndex, size_t endIndex) const;
 	RowVector getPoint(size_t i) const;
 	uint8_t getType(size_t i) const;
-	std::string getName(size_t i) const;
 	CovarianceMatrix getCovarianceMatrix(ClassifierType type) const;
 	std::shared_ptr<Classifier> classifier(ClassifierType type) const;
 	DataMatrix getData() const;

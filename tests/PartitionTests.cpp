@@ -33,5 +33,3 @@ TEST(PartitionTests, KFoldIndicesSmallNumbers)
 	EXPECT_EQ(1, res.first);
 	EXPECT_EQ(1, res.second);
 }
-
-//std::pair<size_t, size_t> kFoldIndices(size_t currentFold, size_t k, size_t size)

@@ -174,10 +174,24 @@ void classifyAndTest(const Dataset& data,
 			// Classify
 			auto type = c->classify(partitions.testing.getPoint(i));
 
-			resultsOut << "Decided class " << static_cast<int>(type)
-					<< " for " << partitions.testing.getName(i) << " (actual "
+			if (type == partitions.testing.getType(i))
+			{
+				resultsOut << "Decided true class " << static_cast<int>(type)
+					<< " for " << partitions.testing.getPoint(i) << std::endl;
+			}
+			else if (type == NoType)
+			{
+				resultsOut << "Undecided (actual "
 					<< static_cast<int>(partitions.testing.getType(i))
-					<< "): " << partitions.testing.getPoint(i) << std::endl;
+					<< ") for " << partitions.testing.getPoint(i) << std::endl;
+			}
+			else
+			{
+				resultsOut << "Decided wrong class " << static_cast<int>(type)
+					<< " (actual "
+					<< static_cast<int>(partitions.testing.getType(i))
+					<< ") for " << partitions.testing.getPoint(i) << std::endl;
+			}
 
 			// Update counters
 			if (type == partitions.testing.getType(i))

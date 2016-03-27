@@ -215,12 +215,6 @@ uint8_t Dataset::getType(size_t i) const
 	return types[i];
 }
 
-std::string Dataset::getName(size_t i) const
-{
-	assert(i < names.size());
-	return names[i];
-}
-
 DataMatrix Dataset::getData() const
 {
 	return data;
